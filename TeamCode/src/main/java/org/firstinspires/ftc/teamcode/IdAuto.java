@@ -111,9 +111,6 @@ public class IdAuto extends LinearOpMode {
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        targetStartPose = odo.getPosition();
-        targetEndPose = odo.getPosition();
-        currentPose = odo.getPosition();
 
         telemetry.addData(">", "Robot Ready.  Press START.");
 
@@ -124,6 +121,10 @@ public class IdAuto extends LinearOpMode {
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.resetPosAndIMU();
         telemetry.update();
+
+        targetStartPose = odo.getPosition();
+        targetEndPose = odo.getPosition();
+        currentPose = odo.getPosition();
 
         // Wait for the game to start (driver presses START)
         waitForStart();
@@ -155,10 +156,20 @@ public class IdAuto extends LinearOpMode {
 
         currentPose = new Pose2D(DistanceUnit.CM, currentPose.getX(DistanceUnit.CM), currentPose.getY(DistanceUnit.CM) - 60, AngleUnit.DEGREES, currentPose.getHeading(AngleUnit.DEGREES));
         move(60, 0.6);
-        move(60,0.6);
 
         while (opModeIsActive() && moveState != MoveState.STOPPED) {
-            strafeLoop();
+            moveLoop();
+            Pose2D pos = odo.getPosition();
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);      telemetry.addData("Position", data);
+            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
+            telemetry.update();
+        }
+        targetStartPose = targetEndPose;
+        move(60, 0.6);
+
+        while (opModeIsActive() && moveState != MoveState.STOPPED) {
+            moveLoop();
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);      telemetry.addData("Position", data);
