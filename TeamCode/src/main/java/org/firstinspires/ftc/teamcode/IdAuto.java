@@ -29,11 +29,13 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -118,7 +120,7 @@ public class IdAuto extends LinearOpMode {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.resetPosAndIMU();
         telemetry.update();
 
@@ -154,28 +156,29 @@ public class IdAuto extends LinearOpMode {
 //
 //        }
 
-        currentPose = new Pose2D(DistanceUnit.CM, currentPose.getX(DistanceUnit.CM), currentPose.getY(DistanceUnit.CM) - 60, AngleUnit.DEGREES, currentPose.getHeading(AngleUnit.DEGREES));
         move(60, 0.6);
-
-        while (opModeIsActive() && moveState != MoveState.STOPPED) {
-            moveLoop();
-            Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Position", data);      telemetry.addData("Position", data);
-            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
-            telemetry.update();
-        }
-        targetStartPose = targetEndPose;
+        waitForA();
+        turn(90, 0.6);
+        waitForA();
+        move(60,0.6);
+        waitForA();
+        turn(90,0.6);
+        waitForA();
+        strafe(60,0.6);
+        waitForA();
+        strafe(-60, 0.6);
+        waitForA();
         move(60, 0.6);
+        waitForA();
+        turn(-45,0.6);
+        waitForA();
+        move(-60 * 1.414, 0.6);
+        waitForA();
+        turn(-135,0.6);
+        waitForA();
+        move(-60, 0.6);
 
-        while (opModeIsActive() && moveState != MoveState.STOPPED) {
-            moveLoop();
-            Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Position", data);      telemetry.addData("Position", data);
-            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
-            telemetry.update();
-        }
+
 
         double loopEndPosition = (odo.getPosition().getHeading(AngleUnit.DEGREES));
 
@@ -202,11 +205,6 @@ public class IdAuto extends LinearOpMode {
 //        }
 
         // Step 4:  Stop
-
-
-        telemetry.addData("Path" , "Complete");
-        telemetry.update();
-        sleep(1000);
 
         while (opModeIsActive()) {
             double y = -gamepad1.left_stick_y; // Remember, Y stick is reversed!
@@ -236,10 +234,17 @@ public class IdAuto extends LinearOpMode {
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
             telemetry.addData("End Loop Position", loopEndPosition);
+            telemetry.addData("Path" , "Complete");
+            displayTargetEndPose();
             telemetry.update();
         }
     }
 
+    public void waitForA() {
+        while (opModeIsActive() && gamepad1.a == false) {
+            sleep(50);
+        }
+    }
     private double turnDistance;
 
     private double moveSpeed;
@@ -261,16 +266,16 @@ public class IdAuto extends LinearOpMode {
         setPowers(power, power, power, power);
     }
 
-    public void move(double distance, double speed, double desiredHeading) {
-        move(distance, speed);
+    public void startMove(double distance, double speed, double desiredHeading) {
+        startMove(distance, speed);
         setDesiredHeading(desiredHeading);
     }
     public void setDesiredHeading(double desiredHeadingIn) {
         desiredHeading = desiredHeadingIn;
     }
 
-    public double getCurrentRotation() {
-        return -odo.getPosition().getHeading(AngleUnit.DEGREES);
+    public double getRotation(Pose2D pose) {
+        return -pose.getHeading(AngleUnit.DEGREES);
     }
 
     private double getDistance(Pose2D a, Pose2D b) {
@@ -284,9 +289,29 @@ public class IdAuto extends LinearOpMode {
         double y = odo.getVelocity().getY(DistanceUnit.CM);
         return (Math.sqrt(x * x + y * y));
     }
-    public void move(double distance, double speed) {
 
+    public void displayTargetEndPose () {
+        telemetry.addData("Target End Pose X", targetEndPose.getX(DistanceUnit.CM));
+        telemetry.addData("Target End Pose Y", targetEndPose.getY(DistanceUnit.CM));
+        telemetry.addData("Target End Pose Heading", targetEndPose.getHeading(AngleUnit.DEGREES));
+    }
+
+    public void move(double distance, double speed) {
+        startMove(distance, speed);
+        while (opModeIsActive() && moveState != MoveState.STOPPED) {
+            moveLoop();
+            Pose2D pos = odo.getPosition();
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);      telemetry.addData("Position", data);
+            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
+            displayTargetEndPose();
+            telemetry.update();
+        }
+    }
+    public void startMove(double distance, double speed) {
         moveState = MoveState.MOVING;
+        targetStartPose = targetEndPose;
+        currentPose = odo.getPosition();
         startPosition = odo.getPosition();
         desiredHeading = targetStartPose.getHeading(AngleUnit.DEGREES);
         double targetX = targetStartPose.getX(DistanceUnit.CM) + (Math.cos(Math.toRadians(desiredHeading)) * distance);
@@ -297,6 +322,8 @@ public class IdAuto extends LinearOpMode {
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
         moveDistance = Math.hypot(xDifference, yDifference);
         desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
+        System.out.println("Move Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);
+
         if (distance < 0) {
             moveSpeed = -speed;
         } else {
@@ -361,27 +388,46 @@ public class IdAuto extends LinearOpMode {
     }
 
     public void turn(double degrees, double speed) {
+        startTurn(degrees, speed);
+        while (opModeIsActive() && moveState != MoveState.STOPPED) {
+            turnLoop();
+            Pose2D pos = odo.getPosition();
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);      telemetry.addData("Position", data);
+            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
+            displayTargetEndPose();
+            telemetry.update();
+        }
+    }
+    public void startTurn(double degrees, double speed) {
         moveState = MoveState.MOVING;
-        startRotation = getCurrentRotation();
-        turnDistance = Math.abs(degrees);
+        targetStartPose = targetEndPose;
+        currentPose = odo.getPosition();
+        startPosition = odo.getPosition();
+        startRotation = startPosition.getHeading(AngleUnit.DEGREES);
+        desiredHeading = targetStartPose.getHeading(AngleUnit.DEGREES) + degrees;
+        targetEndPose = new Pose2D(DistanceUnit.CM, targetStartPose.getX(DistanceUnit.CM), targetStartPose.getY(DistanceUnit.CM), AngleUnit.DEGREES, desiredHeading);
+        double turnDegrees = desiredHeading - startRotation;
+        turnDistance = Math.abs(turnDegrees);
         moveSpeed = speed;
-        if (degrees > 0) {
-            System.out.println("Turning Left");
+        System.out.println("Desired Heading: " + desiredHeading + " Target Start Degrees: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " Current Degrees: " + startRotation);
+        if (turnDegrees > 0) {
+            System.out.println("Turning Left " + turnDegrees);
             setPowers(-moveSpeed, moveSpeed, moveSpeed, -moveSpeed);
         } else {
-            System.out.println("Turning Right");
+            System.out.println("Turning Right " + turnDegrees);
             setPowers(moveSpeed, -moveSpeed, -moveSpeed, moveSpeed);
         }
         startBraking = 25;
         if (turnDistance < 50) {
-            startBraking = degrees * 0.66;
+            startBraking = turnDistance * 0.66;
         }
     }
 
 
     public void turnLoop() {
                 odo.update();
-                double rotation = getCurrentRotation();
+                double rotation = odo.getPosition().getHeading(AngleUnit.DEGREES);
                 double distanceTurned = degreeDifference(startRotation, rotation);
                 double degreesLeft = turnDistance - Math.abs(distanceTurned);
                 telemetry.addData("Distance Turned", distanceTurned);
@@ -426,11 +472,36 @@ public class IdAuto extends LinearOpMode {
 
                 }
             }
+
     public void strafe(double distance, double speed) {
+        startStrafe(distance, speed);
+        while (opModeIsActive() && moveState != MoveState.STOPPED) {
+            strafeLoop();
+            Pose2D pos = odo.getPosition();
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.CM), pos.getY(DistanceUnit.CM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);      telemetry.addData("Position", data);
+            telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
+            displayTargetEndPose();
+            telemetry.update();
+        }
+    }
+    public void startStrafe(double distance, double speed) {
         moveState = MoveState.MOVING;
+        targetStartPose = targetEndPose;
+        currentPose = odo.getPosition();
         startPosition = odo.getPosition();
-        desiredHeading = startPosition.getHeading(AngleUnit.DEGREES);
+        double startHeading = targetStartPose.getHeading(AngleUnit.DEGREES);
+        double moveDirection = startHeading + 90;
+        double targetX = targetStartPose.getX(DistanceUnit.CM) + (Math.cos(Math.toRadians(moveDirection)) * distance);
+        double targetY = targetStartPose.getY(DistanceUnit.CM) + (Math.sin(Math.toRadians(moveDirection)) * distance);
+        targetEndPose = new Pose2D(DistanceUnit.CM, targetX, targetY, AngleUnit.DEGREES, startHeading);
         moveDistance = Math.abs(distance);
+        double xDifference = targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM);
+        double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
+        moveDistance = Math.hypot(xDifference, yDifference);
+        desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference)) - 90;
+        System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
+        System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
         if (distance < 0) {
             moveSpeed = -speed;
         } else {
