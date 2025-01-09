@@ -55,7 +55,7 @@ public class LogViewer implements WebHandler {
         String add = "";
         boolean greenSearch = parms.get("green") != null;
         boolean redSearch = parms.get("red") != null;
-        try (BufferedReader br = new BufferedReader(new FileReader("robotControllerLog.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("/mnt/runtime/write/emulated/0/robotControllerLog.txt"))) {
             while ((line = br.readLine()) != null) {
                 if (redSearch && line.contains(parms.get("red"))) {
                     add += "<font style='background-color:pink'>"+line+"</font>\n";

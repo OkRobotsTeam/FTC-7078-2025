@@ -5,6 +5,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
@@ -23,9 +24,13 @@ public class IdTeleop extends OpMode{
     public DcMotor  leftFront   = null;
     public DcMotor  rightFront  = null;
     public DcMotor  leftBack     = null;
+    public DcMotor  rightBack   = null;
 
-    public DcMotor   rightBack   = null;
-
+    public CRServo leftIntake = null;
+    public CRServo rightIntake = null;
+    public DcMotor armExtension = null;
+    public DcMotor armRotation = null;
+    public Servo wristRotation = null;
     GoBildaPinpointDriver odo;
 
     private double getVelocity() {
@@ -44,6 +49,12 @@ public class IdTeleop extends OpMode{
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
         rightBack = hardwareMap.get(DcMotor.class, "rightBack");
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
+
+        leftIntake = hardwareMap.get(CRServo.class, "leftIntake");
+        rightIntake = hardwareMap.get(CRServo.class, "rightIntake");
+        armExtension = hardwareMap.get(DcMotor.class, "armExtension");
+        armRotation = hardwareMap.get(DcMotor.class, "armRotation");
+        wristRotation = hardwareMap.get(Servo.class, "wristRotation");
 
         leftBack.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.FORWARD);
@@ -99,6 +110,8 @@ public class IdTeleop extends OpMode{
 //        } else {
 //            leftFront.setPower(0);
 //        }
+
+
 
         if (gamepad1.right_bumper) {
             x = x * 0.2;
