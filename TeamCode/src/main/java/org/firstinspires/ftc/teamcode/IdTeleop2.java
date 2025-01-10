@@ -101,10 +101,29 @@ public class IdTeleop2 extends LinearOpMode {
             if (gamepad2.left_bumper) {
                 robot.moveArmToPickup();
             }
+            double y = -gamepad1.left_stick_y; // Remember, Y stick is reversed!
+            double x = gamepad1.left_stick_x;
+            double rx = gamepad1.right_stick_x;
+
+
+            if (gamepad1.right_bumper) {
+                x = x * 0.2;
+                y = y * 0.2;
+                rx = rx * 0.2;
+            }
+
+            robot.leftFront.setPower(y + x + rx);
+            robot.leftBack.setPower(y - x + rx);
+            robot.rightFront.setPower(y - x - rx);
+            robot.rightBack.setPower(y + x - rx);
+
             robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
             telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());
             telemetry.addData("Extension", robot.armExtension.getCurrentPosition());
             telemetry.addData("Setting Wrist Position", robot.currentWristPosition);
+            telemetry.addData("X", x);
+            telemetry.addData("Y", y);
+            telemetry.addData("rx", rx);
             telemetry.update();
             sleep(20);
         }

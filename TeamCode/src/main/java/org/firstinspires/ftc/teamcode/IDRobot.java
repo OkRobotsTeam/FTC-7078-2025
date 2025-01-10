@@ -138,9 +138,9 @@ public class IDRobot {
     }
 
     public void rotateArm (double power) {
-        if (armRotation.getCurrentPosition() < -10) {
+        if (armRotation.getCurrentPosition() < -300) {
             power = Math.max(power, 0);
-        } else if (armRotation.getCurrentPosition() > 45) {
+        } else if (armRotation.getCurrentPosition() > 6000) {
             power = Math.min(power, 0);
         }
         armRotation.setPower(power);
@@ -148,7 +148,7 @@ public class IDRobot {
 
     public void startUndocking () {
         armState = ArmState.UNDOCK;
-        rotateArmToPosition(25);
+        rotateArmToPosition(1600);
     }
     public void manualControl (double armExtensionTrim, double armRotateTrim, boolean wristTrimUp, boolean wristTrimDown) {
         if (wristTrimUp) {
@@ -167,13 +167,18 @@ public class IDRobot {
         }else if (armState == ArmState.SCORING) {
             extendArmToPosition(10);
             armState = ArmState.SCORING_TO_DRIVING_1;
+        }else if (armState == ArmState.DRIVING) {
+            setWristPosition(0.15);
+            extendArmToPosition(10);
+            rotateArmToPosition(1600);
+            armState = ArmState.SCORING_TO_DRIVING_1;
         }
     }
     public void moveArmToScoring () {
         if (armState == ArmState.PICKUP) {
             moveArmToDriving();
         }else if (armState == ArmState.DRIVING) {
-            rotateArmToPosition(40);
+            rotateArmToPosition(2200);
             armState = ArmState.DRIVING_TO_SCORING_1;
         }
     }
@@ -181,7 +186,8 @@ public class IDRobot {
         if (armState == ArmState.SCORING) {
             moveArmToDriving();
         }else if (armState == ArmState.DRIVING) {
-            rotateArmToPosition(-2);
+            rotateArmToPosition(0);
+            setWristPosition(0.15);
             armState = ArmState.DRIVING_TO_PICKUP_1;
         }
     }
@@ -189,7 +195,7 @@ public class IDRobot {
         if (armState == ArmState.DOCKED) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         }else if (armState == ArmState.UNDOCK) {
-            if (Math.abs(armRotation.getCurrentPosition() - 30) < 3) {
+            if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
                 armState = ArmState.DRIVING;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armRotation.setPower(0);
@@ -213,11 +219,11 @@ public class IDRobot {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         }else if (armState == ArmState.PICKUP_TO_DRIVING_1) {
             if (Math.abs(armExtension.getCurrentPosition() - 10) < 2000) {
-                rotateArmToPosition(30);
+                rotateArmToPosition(1600);
                 armState = ArmState.PICKUP_TO_DRIVING_2;
             }
         }else if (armState == ArmState.PICKUP_TO_DRIVING_2) {
-            if (Math.abs(armRotation.getCurrentPosition() - 30) < 3) {
+            if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
                 armState = ArmState.DRIVING;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -225,7 +231,7 @@ public class IDRobot {
                 armExtension.setPower(0);
             }
         }else if (armState == ArmState.DRIVING_TO_SCORING_1) {
-            if (Math.abs(armRotation.getCurrentPosition() - 40) < 3) {
+            if (Math.abs(armRotation.getCurrentPosition() - 2200) < 3) {
                 extendArmToPosition(7550);
                 armState = ArmState.DRIVING_TO_SCORING_2;
             }
@@ -241,11 +247,11 @@ public class IDRobot {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         }else if (armState == ArmState.SCORING_TO_DRIVING_1) {
             if (Math.abs(armExtension.getCurrentPosition() - 10) < 3000) {
-                rotateArmToPosition(30);
+                rotateArmToPosition(1600);
                 armState = ArmState.PICKUP_TO_DRIVING_2;
             }
         }else if (armState == ArmState.SCORING_TO_DRIVING_2) {
-            if (Math.abs(armRotation.getCurrentPosition() - 30) < 3) {
+            if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
                 armState = ArmState.DRIVING;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
