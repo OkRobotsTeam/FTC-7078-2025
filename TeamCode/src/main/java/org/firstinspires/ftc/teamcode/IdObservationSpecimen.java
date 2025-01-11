@@ -140,22 +140,27 @@ public class IdObservationSpecimen extends LinearOpMode {
 //
 //        }
 
+        move(10,0.6);
         robot.extendArmToPosition(3800);
         robot.rotateArmToPosition(1700);
+        while (robot.armRotation.getCurrentPosition() < 400) {
+            sleep(20);
+        }
+        robot.setWristPosition(0.7);
         while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() <1600) {
             sleep(20);
         }
-        robot.setWristPosition(0.0);
-        move(74, 0.4);
+        move(64, 0.4);
         while (robot.armExtension.getCurrentPosition() < 2900) {
             sleep(20);
         }
-        robot.rotateArmToPosition(500);
-        robot.extendArmToPosition(500);
+        robot.extendArmToPosition(0);
         while (robot.armExtension.getCurrentPosition() > 1000) {
             sleep(20);
         }
-        move(-30, 0.6);
+        move(-60, 0.6);
+        robot.rotateArmToPosition(0);
+        robot.setWristPosition(0.0);
         strafe(-120, 0.6);
 
 //        move(60, 0.6);
@@ -506,13 +511,15 @@ public class IdObservationSpecimen extends LinearOpMode {
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
         moveDistance = Math.hypot(xDifference, yDifference);
         desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference)) - 90;
-        System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
-        System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
         if (distance < 0) {
+            desiredHeading = AngleUnit.normalizeDegrees(desiredHeading+180);
             moveSpeed = -speed;
         } else {
             moveSpeed = speed;
         }
+        System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
+        System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
+
         startBraking = 20;
         if (moveDistance < 35) {
             startBraking = moveDistance * 0.66;

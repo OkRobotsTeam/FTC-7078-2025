@@ -10,7 +10,7 @@ import java.util.OptionalDouble;
 
 public class IDRobot {
     static final double WRIST_MINIMUM_OUTPUT = 0.15;
-    static final double WRIST_MAXIMUM_OUTPUT = 0.70;
+    static final double WRIST_MAXIMUM_OUTPUT = 0.9;
     static final double ARM_EXTENSION_LIMIT = 4500;
     double currentWristPosition;
 
@@ -80,8 +80,6 @@ public class IDRobot {
         armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        setWristPosition(0.0);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -225,6 +223,7 @@ public class IDRobot {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         } else if (armState == ArmState.UNDOCK) {
             if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
+                setWristPosition(0.0);
                 armState = ArmState.DRIVING;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armRotation.setPower(0);
@@ -263,7 +262,7 @@ public class IDRobot {
             }
         } else if (armState == ArmState.DRIVING_TO_SCORING_1) {
             if (Math.abs(armRotation.getCurrentPosition() - 2200) < 100) {
-                extendArmToPosition(7550);
+                extendArmToPosition(7650);
                 armState = ArmState.DRIVING_TO_SCORING_2;
             }
         } else if (armState == ArmState.DRIVING_TO_SCORING_2) {
