@@ -69,6 +69,11 @@ public class IDRobot {
         rightBack.setDirection(DcMotor.Direction.FORWARD);
         armExtension.setDirection(DcMotor.Direction.REVERSE);
 
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         armExtension.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         armRotation.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -170,7 +175,14 @@ public class IDRobot {
         } else if (wristTrimDown) {
             setWristPosition(currentWristPosition - 0.01);
         }
-        extendArm(armExtensionTrim);
+
+        boolean limitArmExtension = (armRotation.getCurrentPosition() < 2200) || armRotation.getCurrentPosition() > 3000;
+
+        if (limitArmExtension && (armExtension.getCurrentPosition() > ARM_EXTENSION_LIMIT)) {
+            extendArm(-1);
+        }else {
+            extendArm(armExtensionTrim);
+        }
         rotateArm(armRotateTrim);
     }
 
@@ -223,6 +235,7 @@ public class IDRobot {
             if ((Math.abs(armRotation.getCurrentPosition() - 400) < 50) &&
                 (armExtension.getCurrentPosition() > 700)) {
                 extendArmToPosition(3000);
+                rotateArmToPosition(100);
                 armState = ArmState.DRIVING_TO_PICKUP_2;
             }
         } else if (armState == ArmState.DRIVING_TO_PICKUP_2) {
@@ -230,7 +243,7 @@ public class IDRobot {
                 armState = ArmState.PICKUP;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                armRotation.setPower(0);
+                armRotation.setPower(0.3);
                 armExtension.setPower(0);
             }
         } else if (armState == ArmState.PICKUP) {

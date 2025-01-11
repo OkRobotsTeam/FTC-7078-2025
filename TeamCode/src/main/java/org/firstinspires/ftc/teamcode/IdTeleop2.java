@@ -56,16 +56,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 public class IdTeleop2 extends LinearOpMode {
     public IDRobot robot = new IDRobot();
+    private double headingOffset = 0.0;
+    private static final boolean FIELD_ORIENTED = true;
 
     @Override
     public void runOpMode() {
         robot.init(hardwareMap);
         waitForStart();
+        headingOffset = robot.odo.getHeading();
         while (opModeIsActive()) {
-            if (gamepad2.a) {
+            if (gamepad2.right_bumper) {
                 robot.runIntakeIn();
                 telemetry.addData("Intake", "Running Intake In");
-            } else if (gamepad2.b) {
+            } else if (gamepad2.left_bumper) {
                 robot.runIntakeOut();
             } else {
                 robot.stopIntake();
@@ -77,20 +80,24 @@ public class IdTeleop2 extends LinearOpMode {
             if (gamepad2.dpad_down) {
                 robot.setWristPosition(0.0);
             }
-            if (gamepad2.start) {
+            if (gamepad2.back) {
                 if (robot.armState == IDRobot.ArmState.DOCKED) {
                     robot.startUndocking();
                 }
             }
+            if (gamepad2.start) {
+                robot.armState = IDRobot.ArmState.DRIVING;
+            }
             if (gamepad2.x) {
                 robot.moveArmToDriving();
             }
-            if (gamepad2.right_bumper) {
+            if (gamepad2.y) {
                 robot.moveArmToScoring();
             }
-            if (gamepad2.left_bumper) {
+            if (gamepad2.a) {
                 robot.moveArmToPickup();
             }
+
             double y = -gamepad1.left_stick_y; // Remember, Y stick is reversed!
             double x = gamepad1.left_stick_x;
             double rx = gamepad1.right_stick_x;
@@ -131,11 +138,13 @@ public class IdTeleop2 extends LinearOpMode {
             telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());
             telemetry.addData("Extension", robot.armExtension.getCurrentPosition());
             telemetry.addData("Setting Wrist Position", robot.currentWristPosition);
-            telemetry.addData("X", x);
-            telemetry.addData("Y", y);
+            telemetry.addData("State", robot.armState.name());
+            telemetry.addData("X", robot.odo.getPosX());
+            telemetry.addData("Y", robot.odo.getPosY());
             telemetry.addData("rx", rx);
             telemetry.update();
             sleep(20);
+            robot.odo.update();
         }
     }
 }
