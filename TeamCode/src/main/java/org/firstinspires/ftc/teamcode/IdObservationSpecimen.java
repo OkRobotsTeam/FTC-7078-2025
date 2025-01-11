@@ -29,13 +29,11 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -62,15 +60,15 @@ import java.util.Locale;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Robot: Auto Drive By Time", group="Robot")
+@Autonomous(name="Robot: Id Observation Specimen", group="Robot")
 
-public class IdAuto extends LinearOpMode {
+public class IdObservationSpecimen extends LinearOpMode {
 
     /* Declare OpMode members. */
+    public IDRobot robot = new IDRobot();
     public DcMotor  leftFront   = null;
     public DcMotor  rightFront  = null;
     public DcMotor  leftBack     = null;
-
     public DcMotor   rightBack   = null;
 
     private Pose2D targetStartPose;
@@ -98,36 +96,22 @@ public class IdAuto extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        leftFront = hardwareMap.get(DcMotor.class, "leftFront");
-        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
-        rightBack = hardwareMap.get(DcMotor.class, "rightBack");
-        leftBack = hardwareMap.get(DcMotor.class, "leftBack");
+        robot.init(hardwareMap);
 
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.FORWARD);
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        rightBack.setDirection(DcMotor.Direction.FORWARD);
-
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+        leftFront = robot.leftFront;
+        rightFront = robot.rightFront;
+        rightBack = robot.rightBack;
+        leftBack = robot.leftBack;
 
         telemetry.addData(">", "Robot Ready.  Press START.");
 
-        System.out.println("FIND ME!!!");
-
-        odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
-        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-        odo.resetPosAndIMU();
+        odo = robot.odo;
         telemetry.update();
 
         targetStartPose = odo.getPosition();
         targetEndPose = odo.getPosition();
         currentPose = odo.getPosition();
-
+        sleep(300);
         // Wait for the game to start (driver presses START)
         waitForStart();
 
@@ -156,27 +140,47 @@ public class IdAuto extends LinearOpMode {
 //
 //        }
 
-        move(60, 0.6);
-        waitForA();
-        turn(90, 0.6);
-        waitForA();
-        move(60,0.6);
-        waitForA();
-        turn(90,0.6);
-        waitForA();
-        strafe(60,0.6);
-        waitForA();
-        strafe(-60, 0.6);
-        waitForA();
-        move(60, 0.6);
-        waitForA();
-        turn(-45,0.6);
-        waitForA();
-        move(-60 * 1.414, 0.6);
-        waitForA();
-        turn(-135,0.6);
-        waitForA();
-        move(-60, 0.6);
+        robot.extendArmToPosition(3800);
+        robot.rotateArmToPosition(1700);
+        while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() <1600) {
+            sleep(20);
+        }
+        robot.setWristPosition(0.0);
+        move(74, 0.4);
+        while (robot.armExtension.getCurrentPosition() < 2900) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(500);
+        robot.extendArmToPosition(500);
+        while (robot.armExtension.getCurrentPosition() > 1000) {
+            sleep(20);
+        }
+        move(-30, 0.6);
+        strafe(-120, 0.6);
+
+//        move(60, 0.6);
+//        waitForA();
+//        turn(90, 0.6);
+//        waitForA();
+//        move(60,0.6);
+//        waitForA();
+//        turn(90,0.6);
+//        waitForA();
+//        strafe(60,0.6);
+//        waitForA();
+//        strafe(-60, 0.6);
+//        waitForA();
+//        move(60, 0.6);
+//        waitForA();
+//        turn(-45,0.6);
+//        waitForA();
+//        move(-60 * 1.414, 0.6);
+//        waitForA();
+//        turn(-135,0.6);
+//        waitForA();
+//        move(-60, 0.6);
+
+
 
 
 
@@ -322,13 +326,15 @@ public class IdAuto extends LinearOpMode {
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
         moveDistance = Math.hypot(xDifference, yDifference);
         desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
-        System.out.println("Move Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);
-
         if (distance < 0) {
+            desiredHeading = AngleUnit.normalizeDegrees(desiredHeading+180);
             moveSpeed = -speed;
         } else {
             moveSpeed = speed;
         }
+
+        System.out.println("Move Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);
+
         startBraking = 30;
         if (moveDistance < 60) {
             startBraking = moveDistance * 0.66;

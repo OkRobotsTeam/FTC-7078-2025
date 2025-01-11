@@ -28,19 +28,9 @@
  */
 
 package org.firstinspires.ftc.teamcode;
-
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-
-import java.util.Locale;
 
 
 /*
@@ -81,11 +71,11 @@ public class IdTeleop2 extends LinearOpMode {
                 robot.stopIntake();
             }
             if (gamepad2.dpad_up) {
-                robot.setWristPosition(0.7);
-                telemetry.addData("Wrist", "Setting Wrist Position to 0.7");
+                robot.setWristPosition(1.0);
+                telemetry.addData("Wrist", "Setting Wrist Position to 1.0");
             }
             if (gamepad2.dpad_down) {
-                robot.setWristPosition(0.15);
+                robot.setWristPosition(0.0);
             }
             if (gamepad2.start) {
                 if (robot.armState == IDRobot.ArmState.DOCKED) {
@@ -105,17 +95,37 @@ public class IdTeleop2 extends LinearOpMode {
             double x = gamepad1.left_stick_x;
             double rx = gamepad1.right_stick_x;
 
+            double x_transformed = x;
+            double y_transformed = y;
 
-            if (gamepad1.right_bumper) {
-                x = x * 0.2;
-                y = y * 0.2;
-                rx = rx * 0.2;
+            if (FIELD_ORIENTED) {
+                double magnitude = Math.sqrt(y * y + x * x);
+                double angle = Math.atan2(y, x);
+
+                angle = angle - robot.odo.getPosition().getHeading(AngleUnit.RADIANS) - headingOffset;
+                telemetry.addData("Heading", robot.odo.getPosition().getHeading(AngleUnit.RADIANS));
+
+
+                x_transformed = Math.cos(angle) * magnitude;
+                y_transformed = Math.sin(angle) * magnitude;
             }
 
-            robot.leftFront.setPower(y + x + rx);
-            robot.leftBack.setPower(y - x + rx);
-            robot.rightFront.setPower(y - x - rx);
-            robot.rightBack.setPower(y + x - rx);
+            if (gamepad1.a) {
+                headingOffset = robot.odo.getHeading();
+            }
+
+            if (gamepad1.right_trigger > 0.5) {
+                x_transformed = x_transformed * 0.4;
+                y_transformed = y_transformed * 0.4;
+                rx = rx * 0.4;
+            }
+
+            robot.leftFront.setPower(y_transformed + x_transformed * 1.1 + rx);
+            robot.leftBack.setPower(y_transformed - x_transformed * 1.1 + rx);
+            robot.rightFront.setPower(y_transformed - x_transformed * 1.1 - rx);
+            robot.rightBack.setPower(y_transformed + x_transformed * 1.1 - rx);
+
+//            double wristTrim = gamepad2.dpad_left ? 0.01: 0 + gamepad2.dpad_left ? -0.01: 0;
 
             robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
             telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());
