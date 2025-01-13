@@ -4,7 +4,11 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+
 import java.util.OptionalDouble;
 
 
@@ -14,12 +18,16 @@ public class IDRobot {
     static final double ARM_EXTENSION_LIMIT = 4500;
     double currentWristPosition;
 
+    public boolean disableLimits;
+
     public DcMotor leftFront, rightFront, leftBack, rightBack;
     public CRServo leftIntake, rightIntake;
     public DcMotor armExtension, armRotation;
     public Servo wristRotation;
     GoBildaPinpointDriver odo;
     BNO055IMU imu;
+
+    public Pose2D zeroPose = new Pose2D(DistanceUnit.CM,0,0, AngleUnit.DEGREES, 0);
 
 
     public enum ArmState {
@@ -131,12 +139,14 @@ public class IDRobot {
     }
 
     public void extendArm(double power) {
-        if (armExtension.getCurrentPosition() < 10) {
-            power = Math.max(power, 0);
-        } else if (armExtension.getCurrentPosition() > 7600) {
-            power = Math.min(power, 0);
-        } else if (armExtension.getCurrentPosition() < 150) {
-            power = Math.max(power, -0.1);
+        if (disableLimits == false) {
+            if (armExtension.getCurrentPosition() < 10) {
+                power = Math.max(power, 0);
+            } else if (armExtension.getCurrentPosition() > 7600) {
+                power = Math.min(power, 0);
+            } else if (armExtension.getCurrentPosition() < 150) {
+                power = Math.max(power, -0.1);
+            }
         }
         armExtension.setPower(power);
     }
@@ -154,10 +164,12 @@ public class IDRobot {
     }
 
     public void rotateArm(double power) {
-        if (armRotation.getCurrentPosition() < -300) {
-            power = Math.max(power, 0);
-        } else if (armRotation.getCurrentPosition() > 6000) {
-            power = Math.min(power, 0);
+        if (disableLimits == false) {
+            if (armRotation.getCurrentPosition() < -300) {
+                power = Math.max(power, 0);
+            } else if (armRotation.getCurrentPosition() > 6000) {
+                power = Math.min(power, 0);
+            }
         }
         armRotation.setPower(power);
     }
@@ -190,7 +202,7 @@ public class IDRobot {
             armState = ArmState.PICKUP_TO_DRIVING_1;
         } else if (armState == ArmState.DRIVING ||
                    armState == ArmState.SCORING_TO_DRIVING_1 ||
-                   armState == ArmState.SCORING_TO_DRIVING_1 ) {
+                   armState == ArmState.SCORING_TO_DRIVING_2 ) {
             setWristPosition(0.0);
             extendArmToPosition(10);
             rotateArmToPosition(1600);
@@ -202,7 +214,7 @@ public class IDRobot {
         if (armState == ArmState.PICKUP) {
             moveArmToDriving();
         } else if (armState == ArmState.DRIVING) {
-            rotateArmToPosition(2600);
+            rotateArmToPosition(2700);
             armState = ArmState.DRIVING_TO_SCORING_1;
         }
     }

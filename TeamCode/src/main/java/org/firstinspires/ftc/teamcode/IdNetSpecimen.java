@@ -140,12 +140,14 @@ public class IdNetSpecimen extends LinearOpMode {
 //
 //        }
 
+        robot.odo.setPosition(robot.zeroPose);
         move(10,0.6);
-        robot.extendArmToPosition(3800);
         robot.rotateArmToPosition(1700);
+        robot.extendArmToPosition(-10);
         while (robot.armRotation.getCurrentPosition() < 400) {
             sleep(20);
         }
+        robot.extendArmToPosition(3800);
         robot.setWristPosition(0.7);
         while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() <1600) {
             sleep(20);

@@ -30,6 +30,8 @@
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
@@ -97,6 +99,18 @@ public class IdTeleop2 extends LinearOpMode {
             if (gamepad2.a) {
                 robot.moveArmToPickup();
             }
+            if (gamepad2.right_trigger > 0.3) {
+                robot.disableLimits = true;
+                if (gamepad2.left_trigger > 0.3) {
+                    robot.armRotation.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    robot.armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    robot.armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                }
+            } else {
+                robot.disableLimits = false;
+            }
+
 
             double y = -gamepad1.left_stick_y; // Remember, Y stick is reversed!
             double x = gamepad1.left_stick_x;
@@ -121,9 +135,9 @@ public class IdTeleop2 extends LinearOpMode {
                 headingOffset = robot.odo.getHeading();
             }
 
-            if (gamepad1.right_trigger > 0.5) {
-                x_transformed = x_transformed * 0.4;
-                y_transformed = y_transformed * 0.4;
+            if (gamepad1.right_trigger > 0.3) {
+                x_transformed = x_transformed * 0.3;
+                y_transformed = y_transformed * 0.3;
                 rx = rx * 0.4;
             }
 
