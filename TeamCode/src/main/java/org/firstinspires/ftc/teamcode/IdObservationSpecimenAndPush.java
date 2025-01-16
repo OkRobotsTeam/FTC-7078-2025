@@ -31,8 +31,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -41,10 +39,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import java.util.Locale;
 
 
+@Autonomous(name="Robot: Id Observation Specimen And Push", group="Robot")
 
-@Autonomous(name="Robot: Id Net Specimen", group="Robot")
-
-public class IdNetSpecimen extends LinearOpMode {
+public class IdObservationSpecimenAndPush extends LinearOpMode {
     IDRobot robot = new IDRobot();
 
 
@@ -52,9 +49,13 @@ public class IdNetSpecimen extends LinearOpMode {
     public void runOpMode() {
         robot.init(this);
         waitForStart();
-        robot.odo.setPosition(robot.zeroPose);
+
+        robot.zeroPose();
 
         robot.move(10, 0.6);
+        robot.runIntakeIn();
+        sleep(20);
+        robot.stopIntake();
         robot.rotateArmToPosition(1700);
         robot.extendArmToPosition(-10);
         while (robot.armRotation.getCurrentPosition() < 400) {
@@ -75,11 +76,52 @@ public class IdNetSpecimen extends LinearOpMode {
             sleep(20);
         }
 
+//        waitForA();
         robot.move(-30, 0.6);
-        robot.rotateArmToPosition(0);
+//        waitForA();
+
+        robot.strafe(-70, 0.6);
+//        waitForA();
+
+        robot.move(80, 0.6);
+//        waitForA();
+
+        robot.strafe(-30, 0.6);
+//        waitForA();
+
+        robot.move(-95, 0.6);
+//        waitForA();
+
+        robot.move(95, 0.6);
+//        waitForA();
+
+        robot.strafe(-15, 0.6);
+//        waitForA();
+
+        robot.move(-90, 0.6);
+//        waitForA();
+
+        robot.move(95, 0.6);
+//        waitForA();
+
+        robot.strafe(-25, 0.6);
+//        waitForA();
+
+        robot.move(-95, 0.6);
+//        waitForA();
+
+        robot.move(40, 0.6);
+//        waitForA();
+
+        robot.strafe(25, 0.6);
+
+        robot.turn(180,0.6);
+        robot.move(40, 0.6);
+
+        robot.rotateArmToPosition(100);
         robot.setWristPosition(0.0);
 
-        robot.strafe(120, 0.6);
+
 
         double loopEndPosition = (robot.odo.getPosition().getHeading(AngleUnit.DEGREES));
 
@@ -111,4 +153,10 @@ public class IdNetSpecimen extends LinearOpMode {
             telemetry.update();
         }
     }
+    public void waitForA() {
+        while (opModeIsActive() && gamepad1.a == false) {
+            sleep(50);
+        }
+    }
 }
+
