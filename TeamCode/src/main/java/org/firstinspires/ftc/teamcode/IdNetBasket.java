@@ -32,7 +32,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -41,10 +40,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import java.util.Locale;
 
 
+@Autonomous(name="Robot: Id Net Basket", group="Robot")
 
-@Autonomous(name="Robot: Id Net Specimen", group="Robot")
-
-public class IdNetSpecimen extends LinearOpMode {
+public class IdNetBasket extends LinearOpMode {
     IDRobot robot = new IDRobot();
 
 
@@ -54,35 +52,113 @@ public class IdNetSpecimen extends LinearOpMode {
         waitForStart();
         robot.odo.setPosition(robot.zeroPose);
 
-        robot.move(10, 0.6, true);
-        robot.runIntakeIn();
-        sleep(20);
+
+        robot.armRotation.setPower(1);
+        while (robot.armRotation.getCurrentPosition() < 2000) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(2400);
+        robot.setWristPosition(0.6);
+        robot.extendArmToPosition(4900);
+        robot.strafe(-20, 0.5, false);
+        robot.move(10,0.5,false);
+        while (robot.armExtension.getCurrentPosition() < 4500) {
+            sleep(20);
+        }
+        robot.runIntakeOut();
+        sleep(1000);
         robot.stopIntake();
-        robot.rotateArmToPosition(1700);
-        robot.extendArmToPosition(-10);
-        while (robot.armRotation.getCurrentPosition() < 400) {
-            sleep(20);
-        }
-        robot.extendArmToPosition(3800);
-        robot.setWristPosition(0.7);
-        while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() < 1600) {
-            sleep(20);
-        }
-
-        robot.move(64, 0.4, true);
-        while (robot.armExtension.getCurrentPosition() < 2900) {
-            sleep(20);
-        }
         robot.extendArmToPosition(0);
-        while (robot.armExtension.getCurrentPosition() > 1000) {
+        robot.move( -20, 0.5, false);
+        robot.turn(-135, 0.5);
+        robot.strafe(2.5, 0.6, false);
+        robot.setWristPosition(0.9);
+        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.armRotation.setPower(-1);
+        while (robot.armRotation.getCurrentPosition() > 400) {
             sleep(20);
         }
+        robot.rotateArmToPosition(-100);
+        robot.extendArmToPosition(2600);
+        robot.runIntakeIn();
+        while (robot.armExtension.getCurrentPosition() < 1500 || robot.armRotation.getCurrentPosition() > 0) {
+            sleep(20);
+        }
+        robot.move(20, 0.4, false);
+        while (robot.armExtension.getCurrentPosition() < 2300) {
+            sleep(20);
+        }
+        robot.stopIntake();
+        robot.move(-20, 0.6, false);
+        robot.extendArmToPosition(500);
+        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.armRotation.setPower(1);
+        while (robot.armRotation.getCurrentPosition() < 1500) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(2800);
+        robot.extendArmToPosition(4500);
+        robot.turn(-55, 0.6);
+        robot.move(-13, 0.6, false);
+        while (robot.armExtension.getCurrentPosition() < 4400) {
+            sleep(20);
+        }
+        robot.runIntakeOut();
+        sleep(500);
+        robot.stopIntake();
+        robot.turn(62, 0.6);
+        robot.extendArmToPosition(500);
+        while (robot.armExtension.getCurrentPosition() > 1500) {
+            sleep(20);
+        }
+        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.armRotation.setPower(-1);
+        while (robot.armRotation.getCurrentPosition() > 800) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(-100);
+        robot.extendArmToPosition(2600);
+        robot.runIntakeIn();
+        while (robot.armExtension.getCurrentPosition() < 1500 || robot.armRotation.getCurrentPosition() > 0) {
+            sleep(20);
+        }
+        robot.move(28, 0.4, false);
+        while (robot.armExtension.getCurrentPosition() < 2300) {
+            sleep(20);
+        }
+        robot.stopIntake();
+        robot.move(-28, 0.6, false);
 
-        robot.move(-30, 0.6, true);
-        robot.rotateArmToPosition(0);
-        robot.setWristPosition(0.0);
+        robot.extendArmToPosition(500);
+        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.armRotation.setPower(1);
+        while (robot.armRotation.getCurrentPosition() < 1500) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(2800);
+        robot.extendArmToPosition(4500);
+        robot.turn(-55, 0.6);
+        while (robot.armExtension.getCurrentPosition() < 4400) {
+            sleep(20);
+        }
+        robot.runIntakeOut();
+        sleep(500);
+        robot.stopIntake();
 
-        robot.strafe(120, 0.6, true);
+        robot.extendArmToPosition(0);
+        robot.setWristPosition(0.1);
+        while (robot.armExtension.getCurrentPosition() > 1500) {
+            sleep(20);
+        }
+        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.armRotation.setPower(-1);
+        while (robot.armRotation.getCurrentPosition() > 800) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(200);
+
+
+
 
         double loopEndPosition = (robot.odo.getPosition().getHeading(AngleUnit.DEGREES));
 

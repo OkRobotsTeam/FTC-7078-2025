@@ -52,7 +52,7 @@ public class IdObservationSpecimenAndPush extends LinearOpMode {
 
         robot.zeroPose();
 
-        robot.move(10, 0.6);
+        robot.move(10, 0.6, true);
         robot.runIntakeIn();
         sleep(20);
         robot.stopIntake();
@@ -61,62 +61,62 @@ public class IdObservationSpecimenAndPush extends LinearOpMode {
         while (robot.armRotation.getCurrentPosition() < 400) {
             sleep(20);
         }
-        robot.extendArmToPosition(3800);
+        robot.extendArmToPosition(2400);
         robot.setWristPosition(0.7);
-        while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() < 1600) {
+        while (robot.armExtension.getCurrentPosition() < 2300 || robot.armRotation.getCurrentPosition() < 1600) {
             sleep(20);
         }
 
-        robot.move(64, 0.4);
-        while (robot.armExtension.getCurrentPosition() < 2900) {
+        robot.move(64, 0.4, true);
+        while (robot.armExtension.getCurrentPosition() < 1800) {
             sleep(20);
         }
         robot.extendArmToPosition(0);
-        while (robot.armExtension.getCurrentPosition() > 1000) {
+        while (robot.armExtension.getCurrentPosition() > 630) {
             sleep(20);
         }
 
 //        waitForA();
-        robot.move(-30, 0.6);
+        robot.move(-30, 0.6, true);
 //        waitForA();
 
-        robot.strafe(-70, 0.6);
+        robot.strafe(-70, 0.6, true);
 //        waitForA();
 
-        robot.move(80, 0.6);
+        robot.move(80, 0.6, true);
 //        waitForA();
 
-        robot.strafe(-30, 0.6);
+        robot.strafe(-30, 0.6, false);
 //        waitForA();
 
-        robot.move(-95, 0.6);
+        robot.move(-95, 0.6, true);
 //        waitForA();
 
-        robot.move(95, 0.6);
+        robot.move(95, 0.6, true);
 //        waitForA();
 
-        robot.strafe(-15, 0.6);
+        robot.strafe(-15, 0.6, false);
 //        waitForA();
 
-        robot.move(-90, 0.6);
+        robot.move(-90, 0.6, true);
 //        waitForA();
 
-        robot.move(95, 0.6);
+        robot.move(95, 0.6, true);
 //        waitForA();
 
-        robot.strafe(-25, 0.6);
+        robot.strafe(-25, 0.6, false);
 //        waitForA();
 
-        robot.move(-95, 0.6);
+        robot.move(-95, 0.6, true);
 //        waitForA();
 
-        robot.move(40, 0.6);
+        robot.move(40, 0.6, true);
 //        waitForA();
 
-        robot.strafe(25, 0.6);
+        robot.strafe(25, 0.6, false);
 
         robot.turn(180,0.6);
-        robot.move(40, 0.6);
+        robot.move(40, 0.6, false);
 
         robot.rotateArmToPosition(100);
         robot.setWristPosition(0.0);

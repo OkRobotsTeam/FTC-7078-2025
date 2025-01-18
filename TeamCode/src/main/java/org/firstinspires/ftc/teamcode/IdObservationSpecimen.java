@@ -63,7 +63,10 @@ IDRobot robot = new IDRobot();
 
 
         robot.odo.setPosition(robot.zeroPose);
-        robot.move(10,0.6);
+        robot.move(10, 0.6, true);
+        robot.runIntakeIn();
+        sleep(20);
+        robot.stopIntake();
         robot.rotateArmToPosition(1700);
         robot.extendArmToPosition(-10);
         while (robot.armRotation.getCurrentPosition() < 400) {
@@ -71,10 +74,11 @@ IDRobot robot = new IDRobot();
         }
         robot.extendArmToPosition(3800);
         robot.setWristPosition(0.7);
-        while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() <1600) {
+        while (robot.armExtension.getCurrentPosition() < 3700 || robot.armRotation.getCurrentPosition() < 1600) {
             sleep(20);
         }
-        robot.move(64, 0.4);
+
+        robot.move(64, 0.4, true);
         while (robot.armExtension.getCurrentPosition() < 2900) {
             sleep(20);
         }
@@ -82,10 +86,10 @@ IDRobot robot = new IDRobot();
         while (robot.armExtension.getCurrentPosition() > 1000) {
             sleep(20);
         }
-        robot.move(-60, 0.6);
+        robot.move(-60, 0.6, true);
         robot.rotateArmToPosition(0);
         robot.setWristPosition(0.0);
-        robot.strafe(-120, 0.6);
+        robot.strafe(-120, 0.6, true);
 
 
         double loopEndPosition = (robot.odo.getPosition().getHeading(AngleUnit.DEGREES));

@@ -18,6 +18,7 @@ import java.util.Locale;
 
 //TODO: divide by 25
 @TeleOp(name="Robot: Teleop Tank", group="Robot")
+@Disabled
 
 public class IdTeleop extends OpMode{
 

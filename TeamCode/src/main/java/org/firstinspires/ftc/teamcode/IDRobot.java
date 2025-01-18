@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -20,14 +21,14 @@ import java.util.OptionalDouble;
 public class IDRobot {
     static final double WRIST_MINIMUM_OUTPUT = 0.15;
     static final double WRIST_MAXIMUM_OUTPUT = 0.9;
-    static final double ARM_EXTENSION_LIMIT = 4500;
+    static final double ARM_EXTENSION_LIMIT = 2800;
     double currentWristPosition;
 
     public boolean disableLimits;
 
     public DcMotor leftFront, rightFront, leftBack, rightBack;
     public CRServo leftIntake, rightIntake;
-    public DcMotor armExtension, armRotation;
+    public DcMotorEx armExtension, armRotation;
     public Servo wristRotation;
     GoBildaPinpointDriver odo;
     private Pose2D targetStartPose;
@@ -47,13 +48,15 @@ public class IDRobot {
 
     private double moveDistance;
 
+    public int armRotationTarget = 0;
+    private boolean armRotationAuto = true;
+
     private ElapsedTime runtime = new ElapsedTime();
     public Pose2D zeroPose = new Pose2D(DistanceUnit.CM,0,0, AngleUnit.DEGREES, 0);
 
 
     public enum ArmState {
-        DOCKED,
-        SCORING,
+        DOCKED, SCORING,
         PICKUP,
         DRIVING,
         DRIVING_TO_PICKUP_1,
@@ -65,6 +68,8 @@ public class IDRobot {
         SCORING_TO_DRIVING_1,
         SCORING_TO_DRIVING_2,
         DRIVING_TO_DOCKED_1,
+        SCORING_TO_PICKUP_1,
+        PICKUP_TO_SCORING_1,
         UNDOCK
     }
 
@@ -92,8 +97,8 @@ public class IDRobot {
 
         leftIntake = hardwareMap.get(CRServo.class, "leftIntake");
         rightIntake = hardwareMap.get(CRServo.class, "rightIntake");
-        armExtension = hardwareMap.get(DcMotor.class, "armExtension");
-        armRotation = hardwareMap.get(DcMotor.class, "armRotation");
+        armExtension = hardwareMap.get(DcMotorEx.class, "armExtension");
+        armRotation = hardwareMap.get(DcMotorEx.class, "armRotation");
         wristRotation = hardwareMap.get(Servo.class, "wristRotation");
 
         leftBack.setDirection(DcMotor.Direction.REVERSE);
@@ -114,10 +119,19 @@ public class IDRobot {
         armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        PIDFCoefficients coefficients = armRotation.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        System.out.println("PID Coefficients: " + coefficients.toString());
+        coefficients.p = coefficients.p / 2;
+        coefficients.f = 0;
+        coefficients.d = 0;
+        coefficients.i = 0;
+
+        armRotation.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
-
         imu.initialize(new BNO055IMU.Parameters());
+
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
@@ -132,8 +146,14 @@ public class IDRobot {
         currentPose = odo.getPosition();
 
 
+
     }
 
+    public double clamp( double value, double lower_limit, double upper_limit) {
+        value = Math.max(value, lower_limit);
+        value = Math.min(value, upper_limit);
+        return value;
+    }
     public double clamp(double value, OptionalDouble lower_limit, OptionalDouble upper_limit) {
         if (lower_limit.isPresent()) {
             value = Math.max(value, lower_limit.getAsDouble());
@@ -156,26 +176,49 @@ public class IDRobot {
         System.out.println("Setting Wrist Rotation: " + wristPosition);
     }
 
-    public void runIntakeIn() {
-        leftIntake.setPower(1);
-        rightIntake.setPower(-1);
+    public void adjustWristPosition(double by) {
+        currentWristPosition = currentWristPosition + by;
+        currentWristPosition = Math.min(WRIST_MAXIMUM_OUTPUT,currentWristPosition);
+        currentWristPosition = Math.max(WRIST_MINIMUM_OUTPUT,currentWristPosition);
+        wristRotation.setPosition(currentWristPosition);
     }
 
-    public void runIntakeOut() {
+    public boolean isWithin(int value1, int value2, int tolerance) {
+//        if (Math.abs(value1 - value2) < tolerance){
+//            System.out.println("IS_WITHIN: " + value1 + " : " + value2 + " : " + tolerance);
+//        } else {
+//            System.out.println("NOT_WITHIN: " + value1 + " : " + value2 + " : " + tolerance);
+//        }
+        return (Math.abs(value1 - value2) < tolerance);
+    }
+    public boolean armRotationIsWithin( int tolerance, int value) {
+        return isWithin(armRotation.getCurrentPosition(), value, tolerance);
+    }
+    public boolean armExtensionIsWithin( int tolerance, int value) {
+        return isWithin(armExtension.getCurrentPosition(), value, tolerance);
+    }
+    public void runIntakeIn() {
         leftIntake.setPower(-1);
         rightIntake.setPower(1);
     }
 
+    public void runIntakeOut() {
+        leftIntake.setPower(1);
+        rightIntake.setPower(-1);
+    }
+
     public void stopIntake() {
-        leftIntake.setPower(0);
-        rightIntake.setPower(0);
+        //leftIntake.setPower(0);
+        //rightIntake.setPower(0);
+        leftIntake.getController().pwmDisable();
+        rightIntake.getController().pwmDisable();
     }
 
     public void extendArm(double power) {
         if (disableLimits == false) {
             if (armExtension.getCurrentPosition() < 10) {
                 power = Math.max(power, 0);
-            } else if (armExtension.getCurrentPosition() > 7600) {
+            } else if (armExtension.getCurrentPosition() > 4800) {
                 power = Math.min(power, 0);
             } else if (armExtension.getCurrentPosition() < 150) {
                 power = Math.max(power, -0.1);
@@ -187,13 +230,25 @@ public class IDRobot {
     public void extendArmToPosition(int position) {
         armExtension.setTargetPosition(position);
         armExtension.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armExtension.setPower(1);
+        armExtension.setPower(0.7);
     }
 
     public void rotateArmToPosition(int position) {
         armRotation.setTargetPosition(position);
         armRotation.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armRotation.setPower(1);
+    }
+    private void rotateArmCustom(int position) {
+//        armRotation.setTargetPosition(position);
+//        armRotation.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        armRotation.setPower(1);
+        armRotationTarget = position;
+        armRotationAuto = true;
+    }
+
+    public void rotateArmEnd() {
+        //armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //armRotationAuto=false;
     }
 
     public void rotateArm(double power) {
@@ -209,24 +264,42 @@ public class IDRobot {
 
     public void startUndocking() {
         armState = ArmState.UNDOCK;
-        rotateArmToPosition(1600);
+        rotateArmCustom(1600);
+        setWristPosition(0.9);
     }
 
     public void manualControl(double armExtensionTrim, double armRotateTrim, boolean wristTrimUp, boolean wristTrimDown) {
         if (wristTrimUp) {
-            setWristPosition(currentWristPosition + 0.01);
+            //setWristPosition(currentWristPosition + 0.01);
+            adjustWristPosition(0.01);
         } else if (wristTrimDown) {
-            setWristPosition(currentWristPosition - 0.01);
+            adjustWristPosition(-0.01);
+
+            //setWristPosition(currentWristPosition - 0.01);
         }
 
         boolean limitArmExtension = (armRotation.getCurrentPosition() < 2200) || armRotation.getCurrentPosition() > 3000;
+        boolean limitArmRotation = (armRotation.getCurrentPosition() > 3000);
 
         if (limitArmExtension && (armExtension.getCurrentPosition() > ARM_EXTENSION_LIMIT)) {
             extendArm(-1);
         }else {
-            extendArm(armExtensionTrim);
+            extendArm(armExtensionTrim * 1);
         }
-        rotateArm(armRotateTrim);
+        if (limitArmRotation) {
+            rotateArmCustom(2900);
+        }else {
+            if (Math.abs(armRotateTrim) > 0.2) {
+                armRotationAuto = false;
+                armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rotateArm(armRotateTrim * 0.7);
+            } else {
+                if (armRotationAuto == false) {
+                    armRotationTarget = armRotation.getCurrentPosition();
+                    armRotationAuto = true;
+                }
+            }
+        }
     }
 
     public void moveArmToDriving() {
@@ -236,28 +309,34 @@ public class IDRobot {
         } else if (armState == ArmState.DRIVING ||
                    armState == ArmState.SCORING_TO_DRIVING_1 ||
                    armState == ArmState.SCORING_TO_DRIVING_2 ) {
-            setWristPosition(0.0);
+            setWristPosition(0.9);
             extendArmToPosition(10);
-            rotateArmToPosition(1600);
+            armRotation.setPower(1);
             armState = ArmState.SCORING_TO_DRIVING_1;
         }
     }
 
     public void moveArmToScoring() {
         if (armState == ArmState.PICKUP) {
-            moveArmToDriving();
+            armState = ArmState.PICKUP_TO_SCORING_1;
+            rotateArmCustom(1900);
+            extendArmToPosition(1700);
+            setWristPosition(0.825);
         } else if (armState == ArmState.DRIVING) {
-            rotateArmToPosition(2700);
+            rotateArmCustom(1900);
+            setWristPosition(0.825);
             armState = ArmState.DRIVING_TO_SCORING_1;
         }
     }
 
     public void moveArmToPickup() {
         if (armState == ArmState.SCORING) {
-            moveArmToDriving();
+            armState = ArmState.SCORING_TO_PICKUP_1;
+            rotateArmCustom(-160);
+            extendArmToPosition(1650);
+            setWristPosition(1.0);
         } else if (armState == ArmState.DRIVING) {
-            rotateArmToPosition(400);
-            extendArmToPosition(1000);
+            rotateArmCustom(-160);
             setWristPosition(1.0);
             armState = ArmState.DRIVING_TO_PICKUP_1;
         }
@@ -267,25 +346,22 @@ public class IDRobot {
         if (armState == ArmState.DOCKED) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         } else if (armState == ArmState.UNDOCK) {
-            if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
-                setWristPosition(0.0);
+            if (armRotationIsWithin( 100, 1600)) {
                 armState = ArmState.DRIVING;
-                armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rotateArmEnd();
                 armRotation.setPower(0);
             }
         } else if (armState == ArmState.DRIVING) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         } else if (armState == ArmState.DRIVING_TO_PICKUP_1) {
-            if ((Math.abs(armRotation.getCurrentPosition() - 400) < 50) &&
-                (armExtension.getCurrentPosition() > 700)) {
-                extendArmToPosition(3000);
-                rotateArmToPosition(100);
+            if (armRotationIsWithin(50, 160)) {
+                extendArmToPosition(1650);
                 armState = ArmState.DRIVING_TO_PICKUP_2;
             }
         } else if (armState == ArmState.DRIVING_TO_PICKUP_2) {
-            if (Math.abs(armExtension.getCurrentPosition() - 2500) < 100) {
+            if (armExtensionIsWithin(100, 1650)) {
                 armState = ArmState.PICKUP;
-                armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rotateArmEnd();
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armRotation.setPower(0.3);
                 armExtension.setPower(0);
@@ -293,27 +369,27 @@ public class IDRobot {
         } else if (armState == ArmState.PICKUP) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         } else if (armState == ArmState.PICKUP_TO_DRIVING_1) {
-            if (Math.abs(armExtension.getCurrentPosition() - 10) < 2000) {
-                rotateArmToPosition(1600);
+            if (armExtensionIsWithin(100,10)) {
+                rotateArmCustom(1600);
                 armState = ArmState.PICKUP_TO_DRIVING_2;
             }
         } else if (armState == ArmState.PICKUP_TO_DRIVING_2) {
-            if (Math.abs(armRotation.getCurrentPosition() - 1600) < 100) {
+            if (armRotationIsWithin (100, 1600)) {
                 armState = ArmState.DRIVING;
-                armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rotateArmEnd();
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armRotation.setPower(0);
                 armExtension.setPower(0);
             }
         } else if (armState == ArmState.DRIVING_TO_SCORING_1) {
-            if (Math.abs(armRotation.getCurrentPosition() - 2200) < 100) {
-                extendArmToPosition(7650);
+            if (armRotationIsWithin (100,1900)) {
+                extendArmToPosition(1700);
                 armState = ArmState.DRIVING_TO_SCORING_2;
             }
         } else if (armState == ArmState.DRIVING_TO_SCORING_2) {
-            if (Math.abs(armExtension.getCurrentPosition() - 7550) < 100) {
+            if (armExtensionIsWithin(100, 1700)) {
                 armState = ArmState.SCORING;
-                armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rotateArmEnd();
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armRotation.setPower(0);
                 armExtension.setPower(0);
@@ -321,13 +397,13 @@ public class IDRobot {
         } else if (armState == ArmState.SCORING) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
         } else if (armState == ArmState.SCORING_TO_DRIVING_1) {
-            if (Math.abs(armExtension.getCurrentPosition() - 10) < 2000) {
-                rotateArmToPosition(1600);
+            if (armExtensionIsWithin(2000,10)) {
+                rotateArmCustom(1600);
                 armState = ArmState.PICKUP_TO_DRIVING_2;
             }
         } else if (armState == ArmState.SCORING_TO_DRIVING_2) {
-            if ((Math.abs(armRotation.getCurrentPosition() - 1600) < 100) &&
-                (Math.abs(armExtension.getCurrentPosition() - 10) < 300)) {
+            if ((armRotationIsWithin (100,1600)) &&
+                (armExtensionIsWithin(300, 10))) {
                 armState = ArmState.DRIVING;
                 armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -336,8 +412,24 @@ public class IDRobot {
             }
         } else if (armState == ArmState.DRIVING_TO_DOCKED_1) {
 
+        } else if (armState == ArmState.PICKUP_TO_SCORING_1) {
+            if (armRotationIsWithin(100, 1900)) {
+                armState = ArmState.SCORING;
+            }
+        } else if (armState == ArmState.SCORING_TO_PICKUP_1) {
+            if (armRotationIsWithin(100, -160)) {
+                armState = ArmState.PICKUP;
+            }
+        }
+        //do PID control of armRotation motor here.
+        if (armRotationAuto) {
+            double diff = armRotation.getCurrentPosition() - armRotationTarget;
+            double power = diff * -0.001;
+            power = clamp(power, -1, 1);
+            armRotation.setPower(power);
         }
     }
+
 
     public void zeroPose () {
         odo.setPosition(zeroPose);
@@ -361,8 +453,8 @@ public class IDRobot {
         setPowers(power, power, power, power);
     }
 
-    public void startMove(double distance, double speed, double desiredHeading) {
-        startMove(distance, speed);
+    public void startMove(double distance, double speed, boolean correct, double desiredHeading) {
+        startMove(distance, speed, correct);
         setDesiredHeading(desiredHeading);
     }
     public void setDesiredHeading(double desiredHeadingIn) {
@@ -391,8 +483,8 @@ public class IDRobot {
         telemetry.addData("Target End Pose Heading", targetEndPose.getHeading(AngleUnit.DEGREES));
     }
 
-    public void move(double distance, double speed) {
-        startMove(distance, speed);
+    public void move(double distance, double speed, boolean correct) {
+        startMove(distance, speed, correct);
         while (opMode.opModeIsActive() && moveState != MoveState.STOPPED) {
             moveLoop();
             Pose2D pos = odo.getPosition();
@@ -403,7 +495,7 @@ public class IDRobot {
             telemetry.update();
         }
     }
-    public void startMove(double distance, double speed) {
+    public void startMove(double distance, double speed, boolean correct) {
         moveState = MoveState.MOVING;
         targetStartPose = targetEndPose;
         currentPose = odo.getPosition();
@@ -415,15 +507,23 @@ public class IDRobot {
         moveDistance = Math.abs(distance);
         double xDifference = targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM);
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
-        moveDistance = Math.hypot(xDifference, yDifference);
-        desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
-        System.out.println("Target X: " + targetX + " Target Y: " + targetY);
-        System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
-        if (distance < 0) {
-            desiredHeading = AngleUnit.normalizeDegrees(desiredHeading+180);
-            moveSpeed = -speed;
+        if (correct) {
+            moveDistance = Math.hypot(xDifference, yDifference);
+            desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
+            System.out.println("Target X: " + targetX + " Target Y: " + targetY);
+            System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
+            if (distance < 0) {
+                desiredHeading = AngleUnit.normalizeDegrees(desiredHeading + 180);
+                moveSpeed = -speed;
+            } else {
+                moveSpeed = speed;
+            }
         } else {
-            moveSpeed = speed;
+            if (distance < 0) {
+                moveSpeed = -speed;
+            } else {
+                moveSpeed = speed;
+            }
         }
 
         System.out.println("Move Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);
@@ -441,12 +541,14 @@ public class IDRobot {
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
         if (moveState == MoveState.MOVING) {
-            System.out.println("MOVE - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft );
 
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
+            angularError = AngleUnit.normalizeDegrees(angularError);
             double adjust = angularError / 40;
             setPowers(moveSpeed + adjust, moveSpeed - adjust, moveSpeed - adjust, moveSpeed + adjust);
             //System.out.println("Angle Error: " + angularError + " Adjust: " + adjust);
+            System.out.println("MOVE - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + " Angle Error: " + angularError + " Adjust: " + adjust);
+
             if (distanceLeft < startBraking) {
                 moveState = MoveState.BRAKING;
             }
@@ -573,8 +675,8 @@ public class IDRobot {
         }
     }
 
-    public void strafe(double distance, double speed) {
-        startStrafe(distance, speed);
+    public void strafe(double distance, double speed, boolean correct) {
+        startStrafe(distance, speed, correct);
         while (opMode.opModeIsActive() && moveState != MoveState.STOPPED) {
             strafeLoop();
             Pose2D pos = odo.getPosition();
@@ -585,7 +687,7 @@ public class IDRobot {
             telemetry.update();
         }
     }
-    public void startStrafe(double distance, double speed) {
+    public void startStrafe(double distance, double speed, boolean correct) {
         moveState = MoveState.MOVING;
         targetStartPose = targetEndPose;
         currentPose = odo.getPosition();
@@ -598,15 +700,23 @@ public class IDRobot {
         moveDistance = Math.abs(distance);
         double xDifference = targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM);
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
-        moveDistance = Math.hypot(xDifference, yDifference);
-        desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference)) - 90;
-        System.out.println("Target X: " + targetX + " Target Y: " + targetY);
-        System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
-        if (distance < 0) {
-            desiredHeading = AngleUnit.normalizeDegrees(desiredHeading+180);
-            moveSpeed = -speed;
-        } else {
-            moveSpeed = speed;
+        if (correct) {
+            moveDistance = Math.hypot(xDifference, yDifference);
+            desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference)) - 90;
+            System.out.println("Target X: " + targetX + " Target Y: " + targetY);
+            System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
+            if (distance < 0) {
+                desiredHeading = AngleUnit.normalizeDegrees(desiredHeading + 180);
+                moveSpeed = -speed;
+            } else {
+                moveSpeed = speed;
+            }
+        }  else {
+            if (distance < 0) {
+                moveSpeed = -speed;
+            } else {
+                moveSpeed = speed;
+            }
         }
         System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
         System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
@@ -626,6 +736,7 @@ public class IDRobot {
         System.out.println("Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + " DX" + odo.getPosition().getX(DistanceUnit.CM));
         if (moveState == MoveState.MOVING) {
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
+            angularError = AngleUnit.normalizeDegrees(angularError);
             double adjust = angularError / 40;
             setPowers(-moveSpeed + adjust, moveSpeed - adjust, -moveSpeed - adjust, moveSpeed + adjust);
             System.out.println("Angle Error: " + angularError + " Adjust: " + adjust);

@@ -107,6 +107,7 @@ public class IdTeleop2 extends LinearOpMode {
                     robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                     robot.armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     robot.armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    robot.armRotationTarget = robot.armRotation.getCurrentPosition();
                 }
             } else {
                 robot.disableLimits = false;
