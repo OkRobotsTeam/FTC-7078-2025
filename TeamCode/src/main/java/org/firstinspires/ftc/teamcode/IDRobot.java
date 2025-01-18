@@ -345,6 +345,7 @@ public class IDRobot {
     public void doArmControl(double armExtensionTrim, double armRotateTrim, boolean wristTrimUp, boolean wristTrimDown) {
         if (armState == ArmState.DOCKED) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
+            telemetry.addData("Arm", "Doing Manual Control");
         } else if (armState == ArmState.UNDOCK) {
             if (armRotationIsWithin( 100, 1600)) {
                 armState = ArmState.DRIVING;
@@ -353,6 +354,7 @@ public class IDRobot {
             }
         } else if (armState == ArmState.DRIVING) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
+            telemetry.addData("Arm", "Doing Manual Control");
         } else if (armState == ArmState.DRIVING_TO_PICKUP_1) {
             if (armRotationIsWithin(50, 160)) {
                 extendArmToPosition(1650);
@@ -368,6 +370,7 @@ public class IDRobot {
             }
         } else if (armState == ArmState.PICKUP) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
+            telemetry.addData("Arm", "Doing Manual Control");
         } else if (armState == ArmState.PICKUP_TO_DRIVING_1) {
             if (armExtensionIsWithin(100,10)) {
                 rotateArmCustom(1600);
@@ -396,6 +399,7 @@ public class IDRobot {
             }
         } else if (armState == ArmState.SCORING) {
             manualControl(armExtensionTrim, armRotateTrim, wristTrimUp, wristTrimDown);
+            telemetry.addData("Arm", "Doing Manual Control");
         } else if (armState == ArmState.SCORING_TO_DRIVING_1) {
             if (armExtensionIsWithin(2000,10)) {
                 rotateArmCustom(1600);
@@ -415,12 +419,19 @@ public class IDRobot {
         } else if (armState == ArmState.PICKUP_TO_SCORING_1) {
             if (armRotationIsWithin(100, 1900)) {
                 armState = ArmState.SCORING;
+                armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                armRotation.setPower(0);
+                armExtension.setPower(0);
             }
         } else if (armState == ArmState.SCORING_TO_PICKUP_1) {
             if (armRotationIsWithin(100, -160)) {
                 armState = ArmState.PICKUP;
+                armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                armRotation.setPower(0);
+                armExtension.setPower(0);
             }
         }
+        telemetry.update();
         //do PID control of armRotation motor here.
         if (armRotationAuto) {
             double diff = armRotation.getCurrentPosition() - armRotationTarget;
