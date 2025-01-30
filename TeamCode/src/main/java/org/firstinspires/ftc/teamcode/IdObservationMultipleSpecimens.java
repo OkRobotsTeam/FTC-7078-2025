@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -39,9 +40,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import java.util.Locale;
 
 
-@Autonomous(name="Robot: Id Observation Specimen And Push", group="Robot")
+@Autonomous(name="Robot: Id Observation Multiple Specimens", group="Robot")
 
-public class IdObservationSpecimenAndPush extends LinearOpMode {
+public class IdObservationMultipleSpecimens extends LinearOpMode {
     IDRobot robot = new IDRobot();
 
 
@@ -56,6 +57,10 @@ public class IdObservationSpecimenAndPush extends LinearOpMode {
         robot.runIntakeIn();
         sleep(20);
         robot.stopIntake();
+//        robot.rotateArm(1);
+//        while (robot.armRotation.getCurrentPosition() < 1400) {
+//            sleep(20);
+//        }
         robot.rotateArmToPosition(1700);
         robot.extendArmToPosition(-10);
         while (robot.armRotation.getCurrentPosition() < 400) {
@@ -92,36 +97,73 @@ public class IdObservationSpecimenAndPush extends LinearOpMode {
         robot.strafe(-30, 0.6, false);
 //        waitForA();
 
-        robot.move(-95, 0.6, true);
+        robot.move(-92, 0.7, true);
 //        waitForA();
 
-        robot.move(95, 0.6, true);
+        robot.move(95, 0.7, true);
 //        waitForA();
 
-        robot.strafe(-15, 0.6, false);
+        robot.strafe(-20, 0.6, false);
 //        waitForA();
 
-        robot.move(-90, 0.6, true);
+        robot.move(-93, 0.7, false);
 //        waitForA();
 
-        robot.move(95, 0.6, true);
+        robot.move(20, 0.6, false);
 //        waitForA();
 
-        robot.strafe(-25, 0.6, false);
+        robot.turn(180, 0.6);
 //        waitForA();
-
-        robot.move(-95, 0.6, true);
+        robot.strafe(-13.5, 0.6, false);
+//        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        robot.armRotation.setPower(-1);
+//        while (robot.armRotation.getCurrentPosition() > 400) {
+//            sleep(20);
+//        }
+//        robot.armRotation.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rotateArmToPosition(200);
+        while (robot.armRotation.getCurrentPosition() > 500) {
+            sleep(20);
+        }
+        robot.extendArmToPosition(1700);
+        robot.setWristPosition(0.9);
+        while (robot.armExtension.getCurrentPosition() < 400) {
+            sleep(20);
+        }
+        robot.rotateArmToPosition(-250);
+        while (robot.armRotation.getCurrentPosition() > -100) {
+            sleep(20);
+        }
+        robot.runIntakeIn();
 //        waitForA();
-
-        robot.move(40, 0.6, true);
+        robot.move(37, 0.3, false);
+        sleep(300);
 //        waitForA();
-
-        robot.strafe(25, 0.6, false);
-
-        robot.move(-60, 0.6, false);
-
-        robot.rotateArmToPosition(100);
+        robot.move(-20, 0.6, false);
+//        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.rotateArmToPosition(1700);
+        robot.extendArmToPosition(300);
+        while (robot.armRotation.getCurrentPosition() < 1500) {
+            sleep(20);
+        }
+//        robot.armRotation.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.stopIntake();
+        robot.turn(180, 0.6);
+//        waitForA();
+        robot.strafe(110, 0.8, false);
+        robot.extendArmToPosition(2400);
+        while (robot.armExtension.getCurrentPosition() < 1800) {
+            sleep(20);
+        }
+        robot.move(18, 0.5, false);
+        robot.extendArmToPosition(0);
+        robot.rotateArmToPosition(1300);
+        while (robot.armExtension.getCurrentPosition() > 1800) {
+            sleep(20);
+        }
         robot.setWristPosition(0.0);
+        robot.move(-20, 0.6, false);
+        robot.rotateArmToPosition(100);
 
 
 

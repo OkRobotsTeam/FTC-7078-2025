@@ -125,7 +125,7 @@ public class IdTeleop2 extends LinearOpMode {
                 double magnitude = Math.sqrt(y * y + x * x);
                 double angle = Math.atan2(y, x);
 
-                angle = angle - robot.odo.getPosition().getHeading(AngleUnit.RADIANS) - headingOffset;
+                angle = angle - robot.odo.getPosition().getHeading(AngleUnit.RADIANS);
                 telemetry.addData("Heading", robot.odo.getPosition().getHeading(AngleUnit.RADIANS));
 
 
@@ -134,13 +134,14 @@ public class IdTeleop2 extends LinearOpMode {
             }
 
             if (gamepad1.a) {
-                headingOffset = robot.odo.getHeading();
+//                headingOffset = robot.odo.getHeading();
+                robot.odo.setPosition(robot.zeroPose);
             }
 
             if (gamepad1.right_trigger > 0.3) {
-                x_transformed = x_transformed * 0.3;
-                y_transformed = y_transformed * 0.3;
-                rx = rx * 0.4;
+                x_transformed = x_transformed * 0.2;
+                y_transformed = y_transformed * 0.2;
+                rx = rx * 0.2;
             }
 
             robot.leftFront.setPower(y_transformed + x_transformed * 1.1 + rx);

@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -118,6 +119,10 @@ public class IDRobot {
         armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        MotorConfigurationType fix = armRotation.getMotorType();
+        fix.setMaxRPM(240);
+        armRotation.setMotorType(fix);
 
         PIDFCoefficients coefficients = armRotation.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -440,6 +445,7 @@ public class IDRobot {
             armRotation.setPower(power);
         }
     }
+
 
 
     public void zeroPose () {

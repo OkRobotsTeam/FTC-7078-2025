@@ -53,15 +53,15 @@ public class IdNetBasket extends LinearOpMode {
         robot.odo.setPosition(robot.zeroPose);
 
 
-        robot.armRotation.setPower(1);
+        robot.rotateArmToPosition(2400);
+
         while (robot.armRotation.getCurrentPosition() < 2000) {
             sleep(20);
         }
-        robot.rotateArmToPosition(2400);
         robot.setWristPosition(0.6);
         robot.extendArmToPosition(4900);
         robot.strafe(-20, 0.5, false);
-        robot.move(10,0.5,false);
+        robot.move(17,0.5,false);
         while (robot.armExtension.getCurrentPosition() < 4500) {
             sleep(20);
         }
@@ -70,36 +70,32 @@ public class IdNetBasket extends LinearOpMode {
         robot.stopIntake();
         robot.extendArmToPosition(0);
         robot.move( -20, 0.5, false);
-        robot.turn(-135, 0.5);
-        robot.strafe(2.5, 0.6, false);
+        robot.turn(-138, 0.5);
+//        robot.strafe(2.5, 0.6, false);
         robot.setWristPosition(0.9);
-        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.armRotation.setPower(-1);
+        robot.rotateArmToPosition(-100);
         while (robot.armRotation.getCurrentPosition() > 400) {
             sleep(20);
         }
-        robot.rotateArmToPosition(-100);
         robot.extendArmToPosition(2600);
         robot.runIntakeIn();
-        while (robot.armExtension.getCurrentPosition() < 1500 || robot.armRotation.getCurrentPosition() > 0) {
+        while (robot.armExtension.getCurrentPosition() < 2000 || robot.armRotation.getCurrentPosition() > 0) {
             sleep(20);
         }
-        robot.move(20, 0.4, false);
-        while (robot.armExtension.getCurrentPosition() < 2300) {
+        robot.move(24, 0.4, false);
+        while (robot.armExtension.getCurrentPosition() < 2400) {
             sleep(20);
         }
         robot.stopIntake();
-        robot.move(-20, 0.6, false);
+        robot.move(-29, 0.6, false);
         robot.extendArmToPosition(500);
-        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.armRotation.setPower(1);
+        robot.rotateArmToPosition(2800);
         while (robot.armRotation.getCurrentPosition() < 1500) {
             sleep(20);
         }
-        robot.rotateArmToPosition(2800);
         robot.extendArmToPosition(4500);
         robot.turn(-55, 0.6);
-        robot.move(-13, 0.6, false);
+        robot.move(-15, 0.6, false);
         while (robot.armExtension.getCurrentPosition() < 4400) {
             sleep(20);
         }
@@ -111,36 +107,35 @@ public class IdNetBasket extends LinearOpMode {
         while (robot.armExtension.getCurrentPosition() > 1500) {
             sleep(20);
         }
-        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.armRotation.setPower(-1);
+        robot.rotateArmToPosition(-100);
         while (robot.armRotation.getCurrentPosition() > 800) {
             sleep(20);
         }
-        robot.rotateArmToPosition(-100);
         robot.extendArmToPosition(2600);
         robot.runIntakeIn();
-        while (robot.armExtension.getCurrentPosition() < 1500 || robot.armRotation.getCurrentPosition() > 0) {
+        while (robot.armExtension.getCurrentPosition() < 2000 || robot.armRotation.getCurrentPosition() > 0) {
             sleep(20);
         }
-        robot.move(28, 0.4, false);
-        while (robot.armExtension.getCurrentPosition() < 2300) {
+        robot.move(33, 0.4, false);
+        while (robot.armExtension.getCurrentPosition() < 2400) {
             sleep(20);
         }
         robot.stopIntake();
-        robot.move(-28, 0.6, false);
+        robot.move(-37, 0.6, false);
 
         robot.extendArmToPosition(500);
-        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.armRotation.setPower(1);
+        robot.rotateArmToPosition(2800);
         while (robot.armRotation.getCurrentPosition() < 1500) {
             sleep(20);
         }
-        robot.rotateArmToPosition(2800);
         robot.extendArmToPosition(4500);
-        robot.turn(-55, 0.6);
+        robot.turn(-57, 0.6);
+        robot.move(-6, 0.6, false);
         while (robot.armExtension.getCurrentPosition() < 4400) {
             sleep(20);
         }
+        robot.strafe(4, 0.6, false);
+        robot.move(-15, 0.6, false);
         robot.runIntakeOut();
         sleep(500);
         robot.stopIntake();
@@ -150,14 +145,7 @@ public class IdNetBasket extends LinearOpMode {
         while (robot.armExtension.getCurrentPosition() > 1500) {
             sleep(20);
         }
-        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.armRotation.setPower(-1);
-        while (robot.armRotation.getCurrentPosition() > 800) {
-            sleep(20);
-        }
         robot.rotateArmToPosition(200);
-
-
 
 
         double loopEndPosition = (robot.odo.getPosition().getHeading(AngleUnit.DEGREES));
