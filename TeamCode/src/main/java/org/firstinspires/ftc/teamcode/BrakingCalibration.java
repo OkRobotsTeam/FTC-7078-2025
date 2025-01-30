@@ -168,6 +168,9 @@ public class BrakingCalibration extends LinearOpMode {
                 y_transformed = y_transformed * 0.3;
                 rx = rx * 0.4;
             }
+
+            robot.leftFront.setPower(y_transformed + x_transformed * 1.1 + rx);
+            robot.leftBack.setPower(y_transformed - x_transformed * 1.1 + rx);
             robot.rightFront.setPower(y_transformed - x_transformed * 1.1 - rx);
             robot.rightBack.setPower(y_transformed + x_transformed * 1.1 - rx);
 
