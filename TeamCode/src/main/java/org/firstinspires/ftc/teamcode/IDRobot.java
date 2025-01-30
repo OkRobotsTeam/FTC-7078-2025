@@ -124,6 +124,9 @@ public class IDRobot {
         fix.setMaxRPM(240);
         armRotation.setMotorType(fix);
 
+        armExtension.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armExtension.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
         PIDFCoefficients coefficients = armRotation.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
 
         System.out.println("PID Coefficients: " + coefficients.toString());
@@ -459,14 +462,28 @@ public class IDRobot {
 
     private double desiredHeading;
 
-    private void setPowers(double lF, double rF, double rB, double lB) {
+    public void setPowers(double lF, double rF, double rB, double lB) {
         leftFront.setPower(lF);
         rightFront.setPower(rF);
         rightBack.setPower(rB);
         leftBack.setPower(lB);
     }
 
-    private void setPower(double power){
+    public void setBraking() {
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    }
+
+    public void setCoasting() {
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+    }
+
+    public void setPower(double power){
         setPowers(power, power, power, power);
     }
 
@@ -482,13 +499,13 @@ public class IDRobot {
         return -pose.getHeading(AngleUnit.DEGREES);
     }
 
-    private double getDistance(Pose2D a, Pose2D b) {
+    public double getDistance(Pose2D a, Pose2D b) {
         double dx = a.getX(DistanceUnit.CM) - b.getX(DistanceUnit.CM);
         double dy = a.getY(DistanceUnit.CM) - b.getY(DistanceUnit.CM);
         return(Math.sqrt(dx * dx + dy * dy));
     }
 
-    private double getVelocity() {
+    public double getVelocity() {
         double x = odo.getVelocity().getX(DistanceUnit.CM);
         double y = odo.getVelocity().getY(DistanceUnit.CM);
         return (Math.sqrt(x * x + y * y));
@@ -574,26 +591,15 @@ public class IDRobot {
             double ratio = velocity / distanceLeft;
             if ((ratio > 8) || (distanceLeft < 0)) {
                 System.out.println("MOVE BRAKING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " Ratio: " + ratio );
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                setBraking();
                 setPower(0);
             } else {
                 System.out.println("MOVE COASTING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " Ratio: " + ratio );
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+                setCoasting();
                 setPower(0);
             }
             if (getVelocity() < 1) {
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                setBraking();
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
                 System.out.println("X Error: " + (targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM)) + " Y Error: " + (targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM)));
@@ -643,6 +649,7 @@ public class IDRobot {
         }
     }
 
+    
 
     public void turnLoop() {
         odo.update();
@@ -661,29 +668,17 @@ public class IDRobot {
             double ratio = velocity / degreesLeft;
             if ((ratio > 8) || (degreesLeft < 0)) {
                 System.out.println("BRAKING: Velocity: " + getVelocity() + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                setBraking();
                 setPower(0);
             } else {
                 System.out.println("COASTING: Velocity: " + getVelocity() + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+                setCoasting();
                 setPower(0);
             }
             if (getVelocity() < 1) {
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                setBraking();
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
-
                 moveState = MoveState.STOPPED;
             }
 
@@ -737,7 +732,6 @@ public class IDRobot {
         }
         System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
         System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
-
         startBraking = 8;
         if (moveDistance < 35) {
             startBraking = moveDistance * 0.33;
@@ -750,13 +744,12 @@ public class IDRobot {
         double distanceLeft = (moveDistance - distanceMoved);
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
-        System.out.println("Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + " DX" + odo.getPosition().getX(DistanceUnit.CM));
         if (moveState == MoveState.MOVING) {
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
             angularError = AngleUnit.normalizeDegrees(angularError);
             double adjust = angularError / 40;
             setPowers(-moveSpeed + adjust, moveSpeed - adjust, -moveSpeed - adjust, moveSpeed + adjust);
-            System.out.println("Angle Error: " + angularError + " Adjust: " + adjust);
+            System.out.println("Strafe - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + "Angle Error: " + angularError + " Adjust: " + adjust);
             if (distanceLeft < startBraking) {
                 moveState = MoveState.BRAKING;
             }
@@ -764,27 +757,16 @@ public class IDRobot {
             double velocity = getVelocity();
             double ratio = velocity / distanceLeft;
             if ((ratio > 9.5) || (distanceLeft < 0)) {
-                System.out.println("BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                System.out.println("Strafe - BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
+                setBraking();
                 setPower(0);
             } else {
-                System.out.println("COASTING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
-
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+                System.out.println("Strafe - COASTING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
+                setCoasting();
                 setPower(0);
             }
             if (getVelocity() < 1) {
-                leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                setBraking();
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
                 System.out.println("X Error: " + (targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM)) + " Y Error: " + (targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM)));
