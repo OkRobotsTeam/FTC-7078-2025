@@ -66,7 +66,7 @@ public class BrakingCalibration extends LinearOpMode {
     private double headingOffset = 0.0;
     private static final boolean FIELD_ORIENTED = true;
 
-    private ArrayList<Pair<Double,Double>> forwardBrakingData;
+    private ArrayList<Pair<Double,Double>> forwardBrakingData = new ArrayList<Pair<Double, Double>>();
     @Override
     public void runOpMode() {
         robot.init(this);
@@ -96,35 +96,41 @@ public class BrakingCalibration extends LinearOpMode {
             if (gamepad2.start) {
                 robot.armState = IDRobot.ArmState.DRIVING;
             }
-            if (gamepad2.x) {
+            if (gamepad1.x) {
+                robot.setPowers(1,1,1,1);
+                while(gamepad1.x && opModeIsActive()) {
+                    sleep(20);
+                }
                 robot.setPowers(0,0,0,0);
                 robot.setBraking();
-                robot.odo.update();
-                Pose2D startPosition = robot.odo.getPosition();
-                double velocity = robot.getVelocity();
-                forwardBrakingData.add(new Pair(0,velocity));
-                while (gamepad2.x && velocity > 0) {
+                gatherBrakingData("double[][] forwardBraking = { ");
+            }
+            if (gamepad1.y) {
+                robot.setPowers(1,1,1,1);
+                while(gamepad1.y && opModeIsActive()) {
                     sleep(20);
-                    robot.odo.update();
-                    Pose2D currentPosition = robot.odo.getPosition();
-                    double distance = robot.getDistance(startPosition,currentPosition);
-                    velocity = robot.getVelocity();
-                    forwardBrakingData.add(new Pair(distance, velocity));
                 }
-                double endDistance = forwardBrakingData.get(forwardBrakingData.size()-1).first;
-                String output = "double[][] forwardBraking = { ";
-                for (int i = 0; i< forwardBrakingData.size() ; i++) {
-                    velocity = forwardBrakingData.get(i).second;
-                    double brakingDistance = endDistance - forwardBrakingData.get(i).first;
-                    output.concat( "{" + velocity + " , " + brakingDistance + "}, " ) ;
+                robot.setPowers(0,0,0,0);
+                robot.setCoasting();
+                gatherBrakingData("double[][] forwardCoasting = { ");
+            }
+            if (gamepad1.a) {
+                robot.setPowers(1,-1,1,-1);
+                while(gamepad1.a && opModeIsActive()) {
+                    sleep(20);
                 }
-                System.out.println(output);
+                robot.setPowers(0,0,0,0);
+                robot.setBraking();
+                gatherBrakingData("double[][] strafeBraking = { ");
             }
-            if (gamepad2.y) {
-                robot.moveArmToScoring();
-            }
-            if (gamepad2.a) {
-                robot.moveArmToPickup();
+            if (gamepad1.b) {
+                robot.setPowers(1,-1,1,-1);
+                while(gamepad1.b && opModeIsActive()) {
+                    sleep(20);
+                }
+                robot.setPowers(0,0,0,0);
+                robot.setCoasting();
+                gatherBrakingData("double[][] strafeCoasting = { ");
             }
             if (gamepad2.right_trigger > 0.3) {
                 robot.disableLimits = true;
@@ -176,7 +182,7 @@ public class BrakingCalibration extends LinearOpMode {
 
 //            double wristTrim = gamepad2.dpad_left ? 0.01: 0 + gamepad2.dpad_left ? -0.01: 0;
 
-            robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
+            //robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
             telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());
             telemetry.addData("Extension", robot.armExtension.getCurrentPosition());
             telemetry.addData("Setting Wrist Position", robot.currentWristPosition);
@@ -189,4 +195,33 @@ public class BrakingCalibration extends LinearOpMode {
             robot.odo.update();
         }
     }
+    void gatherBrakingData(String output) {
+        robot.odo.update();
+        Pose2D startPosition = robot.odo.getPosition();
+        double velocity = robot.getVelocity();
+        double distance = 0.0;
+        forwardBrakingData.clear();
+        forwardBrakingData.add(new Pair<Double, Double>(distance,velocity));
+        while ((velocity  > 1) && opModeIsActive()) {
+            sleep(20);
+            robot.odo.update();
+            Pose2D currentPosition = robot.odo.getPosition();
+            distance = robot.getDistance(startPosition,currentPosition);
+            velocity = robot.getVelocity();
+            forwardBrakingData.add(new Pair(distance, velocity));
+        }
+        double endDistance = forwardBrakingData.get(forwardBrakingData.size()-1).first;
+        double brakingDistance;
+        double distanceHere;
+        for (int i = 0; i< forwardBrakingData.size() ; i++) {
+            velocity = forwardBrakingData.get(i).second;
+            distanceHere = forwardBrakingData.get(i).first;
+            brakingDistance = endDistance - distanceHere;
+            output = output.concat( "{" + velocity + " , " + brakingDistance + "}, " ) ;
+            System.out.println("I: " + i + " Velocity: " + velocity + "Braking Distance: " + brakingDistance);
+        }
+        System.out.println(output  + " } ");
+
+    }
 }
+

@@ -102,7 +102,8 @@ public class IdNetBasket extends LinearOpMode {
         robot.runIntakeOut();
         sleep(500);
         robot.stopIntake();
-        robot.turn(62, 0.6);
+        // from 62 to 58
+        robot.turn(58, 0.6);
         robot.extendArmToPosition(500);
         while (robot.armExtension.getCurrentPosition() > 1500) {
             sleep(20);
@@ -121,7 +122,8 @@ public class IdNetBasket extends LinearOpMode {
             sleep(20);
         }
         robot.stopIntake();
-        robot.move(-37, 0.6, false);
+        //changed -37 to -34
+        robot.move(-34, 0.6, false);
 
         robot.extendArmToPosition(500);
         robot.rotateArmToPosition(2800);
