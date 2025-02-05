@@ -66,7 +66,7 @@ public class BrakingCalibration extends LinearOpMode {
     private double headingOffset = 0.0;
     private static final boolean FIELD_ORIENTED = true;
 
-    private ArrayList<Pair<Double,Double>> forwardBrakingData = new ArrayList<Pair<Double, Double>>();
+    private ArrayList<Pair<Double,Double>> brakingData = new ArrayList<Pair<Double, Double>>();
     @Override
     public void runOpMode() {
         robot.init(this);
@@ -96,41 +96,59 @@ public class BrakingCalibration extends LinearOpMode {
             if (gamepad2.start) {
                 robot.armState = IDRobot.ArmState.DRIVING;
             }
-            if (gamepad1.x) {
+            if (gamepad1.dpad_up  && !gamepad1.left_bumper) {
                 robot.setPowers(1,1,1,1);
-                while(gamepad1.x && opModeIsActive()) {
+                while(gamepad1.dpad_up && opModeIsActive()) {
                     sleep(20);
                 }
                 robot.setPowers(0,0,0,0);
                 robot.setBraking();
                 gatherBrakingData("double[][] forwardBraking = { ");
             }
-            if (gamepad1.y) {
+            if (gamepad1.dpad_up  && gamepad1.left_bumper) {
                 robot.setPowers(1,1,1,1);
-                while(gamepad1.y && opModeIsActive()) {
+                while(gamepad1.dpad_up && opModeIsActive()) {
                     sleep(20);
                 }
                 robot.setPowers(0,0,0,0);
                 robot.setCoasting();
                 gatherBrakingData("double[][] forwardCoasting = { ");
             }
-            if (gamepad1.a) {
+            if (gamepad1.dpad_right && !gamepad1.left_bumper) {
                 robot.setPowers(1,-1,1,-1);
-                while(gamepad1.a && opModeIsActive()) {
+                while(gamepad1.dpad_right && opModeIsActive()) {
                     sleep(20);
                 }
                 robot.setPowers(0,0,0,0);
                 robot.setBraking();
                 gatherBrakingData("double[][] strafeBraking = { ");
             }
-            if (gamepad1.b) {
+            if (gamepad1.dpad_right  && gamepad1.left_bumper) {
                 robot.setPowers(1,-1,1,-1);
-                while(gamepad1.b && opModeIsActive()) {
+                while(gamepad1.dpad_right && opModeIsActive()) {
                     sleep(20);
                 }
                 robot.setPowers(0,0,0,0);
                 robot.setCoasting();
                 gatherBrakingData("double[][] strafeCoasting = { ");
+            }
+            if (gamepad1.a) {
+                robot.setPowers( 1, -1, -1, 1);
+                while(gamepad1.a && opModeIsActive()) {
+                    sleep(20);
+                }
+                robot.setPowers(0,0,0,0);
+                robot.setCoasting();
+                gatherTurningBrakingData("double[][] turnCoasting = { ");
+            }
+            if (gamepad1.b) {
+                robot.setPowers( 1, -1, -1, 1);
+                while(gamepad1.b && opModeIsActive()) {
+                    sleep(20);
+                }
+                robot.setPowers(0,0,0,0);
+                robot.setBraking();
+                gatherTurningBrakingData("double[][] turnBraking = { ");
             }
             if (gamepad2.right_trigger > 0.3) {
                 robot.disableLimits = true;
@@ -200,24 +218,52 @@ public class BrakingCalibration extends LinearOpMode {
         Pose2D startPosition = robot.odo.getPosition();
         double velocity = robot.getVelocity();
         double distance = 0.0;
-        forwardBrakingData.clear();
-        forwardBrakingData.add(new Pair<Double, Double>(distance,velocity));
+        brakingData.clear();
+        brakingData.add(new Pair<Double, Double>(distance,velocity));
         while ((velocity  > 1) && opModeIsActive()) {
             sleep(20);
             robot.odo.update();
             Pose2D currentPosition = robot.odo.getPosition();
             distance = robot.getDistance(startPosition,currentPosition);
             velocity = robot.getVelocity();
-            forwardBrakingData.add(new Pair(distance, velocity));
+            brakingData.add(new Pair(distance, velocity));
         }
-        double endDistance = forwardBrakingData.get(forwardBrakingData.size()-1).first;
+        double endDistance = brakingData.get(brakingData.size()-1).first;
         double brakingDistance;
         double distanceHere;
-        for (int i = 0; i< forwardBrakingData.size() ; i++) {
-            velocity = forwardBrakingData.get(i).second;
-            distanceHere = forwardBrakingData.get(i).first;
+        for (int i = 0; i< brakingData.size() ; i++) {
+            velocity = brakingData.get(i).second;
+            distanceHere = brakingData.get(i).first;
             brakingDistance = endDistance - distanceHere;
             output = output.concat( "{" + velocity + " , " + brakingDistance + "}, " ) ;
+            System.out.println("I: " + i + " Velocity: " + velocity + "Braking Distance: " + brakingDistance);
+        }
+        System.out.println(output  + " } ");
+
+    }
+    void gatherTurningBrakingData(String output) {
+        robot.odo.update();
+        Pose2D startPosition = robot.odo.getPosition();
+        double velocity = robot.odo.getHeadingVelocity();
+        double distance = 0.0;
+        brakingData.clear();
+        brakingData.add(new Pair<Double, Double>(distance,velocity));
+        while ((velocity  > 1) && opModeIsActive()) {
+            sleep(20);
+            robot.odo.update();
+            Pose2D currentPosition = robot.odo.getPosition();
+            distance =  AngleUnit.normalizeDegrees(robot.getRotation(startPosition) - robot.getRotation(currentPosition));
+            velocity = robot.odo.getHeadingVelocity();
+            brakingData.add(new Pair(distance, velocity));
+        }
+        double endDistance = brakingData.get(brakingData.size()-1).first;
+        double brakingDistance;
+        double distanceHere;
+        for (int i = 0; i< brakingData.size() ; i++) {
+            velocity = brakingData.get(i).second;
+            distanceHere = brakingData.get(i).first;
+            brakingDistance = endDistance - distanceHere;
+            output = output.concat( "{" + velocity + " , " + brakingDistance + "}, \n" ) ;
             System.out.println("I: " + i + " Velocity: " + velocity + "Braking Distance: " + brakingDistance);
         }
         System.out.println(output  + " } ");

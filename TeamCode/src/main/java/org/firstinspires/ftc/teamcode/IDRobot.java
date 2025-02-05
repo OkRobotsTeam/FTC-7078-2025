@@ -712,9 +712,13 @@ public class IDRobot {
         }
     }
 
-    private double degreeDifference(double a, double b) {
+    public double degreeDifference(double a, double b) {
         return AngleUnit.normalizeDegrees(a-b);
     }
+    public double degreeDifference(Pose2D a, Pose2D b) {
+        return AngleUnit.normalizeDegrees(getRotation(a)-getRotation(b));
+    }
+
 
     public void turn(double degrees, double speed) {
         startTurn(degrees, speed);
