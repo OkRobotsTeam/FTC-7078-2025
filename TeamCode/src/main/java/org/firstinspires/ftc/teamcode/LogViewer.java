@@ -4,9 +4,12 @@ import org.firstinspires.ftc.ftccommon.external.WebHandlerRegistrar;
 import com.qualcomm.robotcore.util.WebHandlerManager;
 import fi.iki.elonen.NanoHTTPD.Response;
 
+import java.io.File;
 import java.io.IOException;
 import android.content.res.AssetManager;
 import android.content.Context;
+
+import java.util.Date;
 import java.util.Map;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -42,6 +45,7 @@ public class LogViewer implements WebHandler {
         if (parms.get("red")== null) {
             parms.put("red","ERROR");
         }
+
         msg += "<form action='?' method='get'>\n" + "  <p>\n";
         msg += "Green Search: " + inputDefault(parms, "green")+ "<p>\n";
         msg += "Red Search: " + inputDefault(parms, "red") + "<p>\n";
@@ -53,9 +57,21 @@ public class LogViewer implements WebHandler {
         msg += "<input type=submit name='Go'></form>\n<pre>\n";
         String line;
         String add = "";
+
         boolean greenSearch = parms.get("green") != null;
         boolean redSearch = parms.get("red") != null;
-        try (BufferedReader br = new BufferedReader(new FileReader("/mnt/runtime/write/emulated/0/robotControllerLog.txt"))) {
+        try {
+            File d = new File("/mnt/runtime/write/emulated/0");
+            if(!d.exists())
+                System.out.println("No File/Dir");
+            if (d.isDirectory()) {
+                add += "Files in /mnt/runtime/write/emulated/0:<p>\n";
+                for(File file :d.listFiles()){
+                    Date date = new Date(file.lastModified());
+                    add += file.getName() + " : " + file.length() + " : " + date + "<p>\n";
+                }
+            }
+            BufferedReader br = new BufferedReader(new FileReader("/mnt/runtime/write/emulated/0/robotControllerLog.txt"));
             while ((line = br.readLine()) != null) {
                 if (redSearch && line.contains(parms.get("red"))) {
                     add += "<font style='background-color:pink'>"+line+"</font>\n";
@@ -76,6 +92,17 @@ public class LogViewer implements WebHandler {
         }
         msg += add + "</pre>\n";
         msg += "</body></html>\n";
+        if (parms.get("delete") == "yes") {
+            File d = new File("/mnt/runtime/write/emulated/0");
+            if (d.isDirectory()) {
+                for (File file : d.listFiles()) {
+                    if (file.getName() == "robotControllerLog.txt") {
+                        //file.delete();
+                        add += "I should delete this file "+ file.getName() + "<p>\n";
+                    }
+                }
+            }
+        }
         return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_HTML, msg);
     }
 }
