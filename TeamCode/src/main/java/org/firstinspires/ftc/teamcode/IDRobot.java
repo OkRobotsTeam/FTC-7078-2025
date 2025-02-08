@@ -1,4 +1,6 @@
 package org.firstinspires.ftc.teamcode;
+import android.view.MotionEvent;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -126,6 +128,27 @@ public class IDRobot {
             {12.834922668035489 , 0.37598620099522506},
             {7.7437858139917175 , 0.12990117033334414},
             {0.18058294048086257 , 0.0}  };
+    double[][] turnCoasting = {
+            {4.5714592933654785 , 46.02535266553599},
+            {3.9597175121307373 , 39.788078556993696},
+            {3.733032464981079 , 33.82155314715072},
+            {3.292947769165039 , 28.560900467271892},
+            {3.0264408588409424 , 23.76519242457414},
+            {2.8081743717193604 , 19.201246360793277},
+            {2.5235493183135986 , 15.140480333167261},
+            {2.1830427646636963 , 11.614900608146797},
+            {1.914730429649353 , 8.360479393175808},
+            {1.6263841390609741 , 5.767056565321923},
+            {1.4072757959365845 , 3.50361383664972},
+            {1.1409660577774048 , 1.4664142940450233},
+            {0.8291528820991516 , 0.0}};
+    double[][] turnBraking = {
+            {4.863333225250244 , 18.357881922836782},
+            {3.814893960952759 , 12.072304716484155},
+            {2.8949763774871826 , 7.225001424796119},
+            {1.8881874084472656 , 3.6205193544836334},
+            {1.1868184804916382 , 1.325849000926155},
+            {0.6549578309059143 , 0.0}};
 
     double currentWristPosition;
 
@@ -256,9 +279,6 @@ public class IDRobot {
         targetStartPose = odo.getPosition();
         targetEndPose = odo.getPosition();
         currentPose = odo.getPosition();
-
-
-
     }
 
     public double clamp( double value, double lower_limit, double upper_limit) {
@@ -562,6 +582,8 @@ public class IDRobot {
 
     private double moveSpeed;
 
+    private double movePower;
+
     private double startBraking;
 
     private double desiredHeading;
@@ -645,6 +667,7 @@ public class IDRobot {
         moveDistance = Math.abs(distance);
         double xDifference = targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM);
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
+        movePower = 0.3;
         if (correct) {
             moveDistance = Math.hypot(xDifference, yDifference);
             desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
@@ -678,22 +701,29 @@ public class IDRobot {
         double distanceLeft = (moveDistance - distanceMoved);
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
+        double velocity = getVelocity();
+        double timeAdjustedDistanceLeft = distanceLeft - velocity * 0.03;
+        movePower = Math.min(moveSpeed, movePower + 0.1);
+        if (!opMode.opModeIsActive()) {
+            moveState = MoveState.STOPPED;
+            return;
+        }
         if (moveState == MoveState.MOVING) {
-
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
             angularError = AngleUnit.normalizeDegrees(angularError);
             double adjust = angularError / 40;
-            setPowers(moveSpeed + adjust, moveSpeed - adjust, moveSpeed - adjust, moveSpeed + adjust);
+            setPowers(movePower + adjust, movePower - adjust, movePower - adjust, movePower + adjust);
             //System.out.println("Angle Error: " + angularError + " Adjust: " + adjust);
             System.out.println("MOVE - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + " Angle Error: " + angularError + " Adjust: " + adjust);
+            //System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, forwardBraking));
 
-            if (distanceLeft < startBraking) {
+            if (timeAdjustedDistanceLeft < getStoppingDistance(velocity, forwardCoasting, forwardBraking)) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double velocity = getVelocity();
             double ratio = velocity / distanceLeft;
-            if ((ratio > 8) || (distanceLeft < 0)) {
+            //System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, forwardBraking));
+            if ((timeAdjustedDistanceLeft < getBrakingDistance(velocity, forwardBraking)) || (distanceLeft < 0)) {
                 System.out.println("MOVE BRAKING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " Ratio: " + ratio );
                 setBraking();
                 setPower(0);
@@ -702,7 +732,7 @@ public class IDRobot {
                 setCoasting();
                 setPower(0);
             }
-            if (getVelocity() < 1) {
+            if (getVelocity() < 10) {
                 setBraking();
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
@@ -718,6 +748,7 @@ public class IDRobot {
     public double degreeDifference(Pose2D a, Pose2D b) {
         return AngleUnit.normalizeDegrees(getRotation(a)-getRotation(b));
     }
+
 
 
     public void turn(double degrees, double speed) {
@@ -740,7 +771,7 @@ public class IDRobot {
         startRotation = startPosition.getHeading(AngleUnit.DEGREES);
         desiredHeading = targetStartPose.getHeading(AngleUnit.DEGREES) + degrees;
         targetEndPose = new Pose2D(DistanceUnit.CM, targetStartPose.getX(DistanceUnit.CM), targetStartPose.getY(DistanceUnit.CM), AngleUnit.DEGREES, desiredHeading);
-        double turnDegrees = desiredHeading - startRotation;
+        double turnDegrees = degreeDifference(desiredHeading, startRotation);
         turnDistance = Math.abs(turnDegrees);
         moveSpeed = speed;
         System.out.println("Desired Heading: " + desiredHeading + " Target Start Degrees: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " Current Degrees: " + startRotation);
@@ -767,19 +798,24 @@ public class IDRobot {
         telemetry.addData("Distance Turned", distanceTurned);
         telemetry.addData("Degrees Left", degreesLeft);
         System.out.println("Distance Turned: " + distanceTurned + " Degrees Left: " + degreesLeft + " DX" + odo.getPosition().getX(DistanceUnit.CM));
+        if (!opMode.opModeIsActive()) {
+            moveState = MoveState.STOPPED;
+            return;
+        }
         if (moveState == MoveState.MOVING) {
             if (degreesLeft < startBraking) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double velocity = getVelocity();
+            double velocity = odo.getHeadingVelocity();
             double ratio = velocity / degreesLeft;
+            System.out.println("Turn Braking: " + getBrakingDistance(velocity, turnBraking));
             if ((ratio > 8) || (degreesLeft < 0)) {
-                System.out.println("BRAKING: Velocity: " + getVelocity() + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
+                System.out.println("TBRAKING: Velocity: " + velocity + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("COASTING: Velocity: " + getVelocity() + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
+                System.out.println("TCOASTING: Velocity: " + velocity + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
                 setCoasting();
                 setPower(0);
             }
@@ -852,6 +888,11 @@ public class IDRobot {
         double distanceLeft = (moveDistance - distanceMoved);
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
+        if (!opMode.opModeIsActive()) {
+            moveState = MoveState.STOPPED;
+            return;
+        }
+
         if (moveState == MoveState.MOVING) {
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
             angularError = AngleUnit.normalizeDegrees(angularError);
@@ -864,6 +905,7 @@ public class IDRobot {
         } else if (moveState == MoveState.BRAKING) {
             double velocity = getVelocity();
             double ratio = velocity / distanceLeft;
+           // System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, strafeBraking));
             if ((ratio > 9.5) || (distanceLeft < 0)) {
                 System.out.println("Strafe - BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
                 setBraking();
@@ -883,5 +925,35 @@ public class IDRobot {
         }
     }
 
+    public double getBrakingDistance(double velocity, double[][]data) {
+        int datapoints = data.length;
+        for (int i = datapoints - 2; i >= 0; i--) {
+            if (velocity < data[i][0]) {
+                //System.out.println("Time to interpolate: "+ velocity + ", " + data[i][0]+ ", " +
+                //h       data[i + 1][0]+ ", " + data[i][1]+ ", " + data[i + 1][1]);
+                return interpolate(velocity, data[i][0], data[i + 1][0], data[i][1], data[i + 1][1]);
+            }
+        }
+        return(velocity/data[0][0]*data[0][1]);
+    }
 
+    public double interpolate(double v, double v1, double v2, double d1, double d2) {
+        double t = (v-v2) / (v1-v2);
+        //return (d2 + (d1-d2)* t);
+        return interpolate(d1,d2, t);
+    }
+
+    public double interpolate (double a, double b, double t) {
+        return (b + (a-b)* t);
+    }
+
+    public double getStoppingDistance(double velocity, double[][] coasting, double[][] braking) {
+        double coastingBrakingDistance = getBrakingDistance(velocity, coasting);
+        double brakingBrakingDistance = getBrakingDistance(velocity, braking);
+        return interpolate(coastingBrakingDistance, brakingBrakingDistance, 0.5);
+    }
+
+    private MoveState figureOutStateStuff(double velocity, double distance, double totalDistance, double[][] coastData, double[][] brakeData) {
+        return(MoveState.BRAKING);
+    }
 }

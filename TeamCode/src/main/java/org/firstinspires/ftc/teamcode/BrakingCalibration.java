@@ -133,7 +133,7 @@ public class BrakingCalibration extends LinearOpMode {
                 gatherBrakingData("double[][] strafeCoasting = { ");
             }
             if (gamepad1.a) {
-                robot.setPowers( 1, -1, -1, 1);
+                robot.setPowers( -1, 1, 1, -1);
                 while(gamepad1.a && opModeIsActive()) {
                     sleep(20);
                 }
@@ -142,7 +142,7 @@ public class BrakingCalibration extends LinearOpMode {
                 gatherTurningBrakingData("double[][] turnCoasting = { ");
             }
             if (gamepad1.b) {
-                robot.setPowers( 1, -1, -1, 1);
+                robot.setPowers( -1, 1, 1, -1);
                 while(gamepad1.b && opModeIsActive()) {
                     sleep(20);
                 }
