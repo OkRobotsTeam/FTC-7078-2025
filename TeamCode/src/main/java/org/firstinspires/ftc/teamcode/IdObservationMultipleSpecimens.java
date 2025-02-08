@@ -53,7 +53,7 @@ public class IdObservationMultipleSpecimens extends LinearOpMode {
 
         robot.zeroPose();
 
-        robot.move(10, 0.6, true);
+        robot.move(10, 1, true);
         robot.runIntakeIn();
         sleep(20);
         robot.stopIntake();
@@ -72,7 +72,7 @@ public class IdObservationMultipleSpecimens extends LinearOpMode {
             sleep(20);
         }
 
-        robot.move(64, 0.4, true);
+        robot.move(64, 1, true);
         robot.runIntakeIn();
 
         while (robot.armExtension.getCurrentPosition() < 1800) {
@@ -84,37 +84,37 @@ public class IdObservationMultipleSpecimens extends LinearOpMode {
         }
 
 //        waitForA();
-        robot.move(-30, 0.6, true);
+        robot.move(-30, 1, true);
 //        waitForA();
         robot.stopIntake();
 
         robot.strafe(-70, 0.6, true);
 //        waitForA();
 
-        robot.move(80, 0.6, true);
+        robot.move(80, 1, true);
 //        waitForA();
 
         robot.strafe(-30, 0.6, false);
 //        waitForA();
 
-        robot.move(-92, 0.7, true);
+        robot.move(-92, 1, true);
 //        waitForA();
 
-        robot.move(95, 0.7, true);
+        robot.move(95, 1, true);
 //        waitForA();
 
         robot.strafe(-20, 0.6, false);
 //        waitForA();
 
-        robot.move(-93, 0.7, false);
+        robot.move(-93, 1, false);
 //        waitForA();
 
-        robot.move(20, 0.6, false);
+        robot.move(20, 1, false);
 //        waitForA();
 
         robot.turn(180, 0.6);
 //        waitForA();
-        robot.strafe(-13.5, 0.6, false);
+        robot.strafe(-8, 0.6, false);
 //        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 //        robot.armRotation.setPower(-1);
 //        while (robot.armRotation.getCurrentPosition() > 400) {
@@ -136,10 +136,10 @@ public class IdObservationMultipleSpecimens extends LinearOpMode {
         }
         robot.runIntakeIn();
 //        waitForA();
-        robot.move(37, 0.3, false);
+        robot.move(20, 0.3, false);
         sleep(300);
 //        waitForA();
-        robot.move(-20, 0.6, false);
+        robot.move(-15, 1, false);
 //        robot.armRotation.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.rotateArmToPosition(1700);
         robot.extendArmToPosition(300);
@@ -155,14 +155,14 @@ public class IdObservationMultipleSpecimens extends LinearOpMode {
         while (robot.armExtension.getCurrentPosition() < 1800) {
             sleep(20);
         }
-        robot.move(18, 0.5, false);
+        robot.move(18, 1, false);
         robot.extendArmToPosition(0);
         robot.rotateArmToPosition(1300);
         while (robot.armExtension.getCurrentPosition() > 1800) {
             sleep(20);
         }
         robot.setWristPosition(0.0);
-        robot.move(-20, 0.6, false);
+        robot.move(-20, 1, false);
         robot.rotateArmToPosition(100);
 
 

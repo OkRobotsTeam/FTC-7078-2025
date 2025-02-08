@@ -63,17 +63,20 @@ public class LogViewer implements WebHandler {
         boolean greenSearch = parms.get("green") != null;
         boolean redSearch = parms.get("red") != null;
         try {
-            File d = new File("/mnt/runtime/write/emulated/0");
+            String logDir = "/mnt/runtime/write/emulated/0";
+            File d = new File(logDir);
             if(!d.exists())
-                System.out.println("No File/Dir");
+                add += ("No File/Dir " + logDir + "\n");
             if (d.isDirectory()) {
-                add += "Files in /mnt/runtime/write/emulated/0:<p>\n";
+                add += "Files in /storage/emulated/0:<p>\n";
                 for(File file :d.listFiles()){
                     Date date = new Date(file.lastModified());
                     add += file.getName() + " : " + file.length() + " : " + date + "<p>\n";
                 }
+            } else {
+                add += ("Not directory " + logDir + "\n");
             }
-            BufferedReader br = new BufferedReader(new FileReader("/mnt/runtime/write/emulated/0/robotControllerLog.txt"));
+                BufferedReader br = new BufferedReader(new FileReader("/storage/emulated/0/robotControllerLog.txt"));
             while ((line = br.readLine()) != null) {
                 if (redSearch && line.contains(parms.get("red"))) {
                     add += "<font style='background-color:pink'>"+line+"</font>\n";
@@ -93,12 +96,12 @@ public class LogViewer implements WebHandler {
             System.err.println("Error reading the file: " + e.getMessage());
         }
         if (parms.get("delete") == "yes") {
-            File d = new File("/mnt/runtime/write/emulated/0");
+            File d = new File("/storage/emulated/0");
             if (d.isDirectory()) {
                 for (File file : d.listFiles()) {
                     if (file.getName() == "robotControllerLog.txt") {
                         //file.delete();
-                        add += "I should delete this file "+ file.getName() + "<p>\n";
+                        add += "I should grr delete this file "+ file.getName() + "<p>\n";
                     }
                 }
             }
