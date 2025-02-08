@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.Map;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.Timer;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.robotcore.internal.webserver.WebHandler;
@@ -36,6 +37,7 @@ public class LogViewer implements WebHandler {
     }
 
     public Response getResponse(NanoHTTPD.IHTTPSession session) {
+        long startTime = System.currentTimeMillis();
         String logFile = "";
         String msg = "<html><body><h1>Log Viewer</h1>\n";
         Map<String, String> parms = session.getParms();
@@ -90,8 +92,6 @@ public class LogViewer implements WebHandler {
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
-        msg += add + "</pre>\n";
-        msg += "</body></html>\n";
         if (parms.get("delete") == "yes") {
             File d = new File("/mnt/runtime/write/emulated/0");
             if (d.isDirectory()) {
@@ -103,6 +103,10 @@ public class LogViewer implements WebHandler {
                 }
             }
         }
+        add += "generating page took " + (System.currentTimeMillis() - startTime) + " milliseconds\n";
+        msg += add + "</pre>\n";
+        msg += "</body></html>\n";
+
         return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_HTML, msg);
     }
 }
