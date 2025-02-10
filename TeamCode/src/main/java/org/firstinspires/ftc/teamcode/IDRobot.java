@@ -159,6 +159,7 @@ public class IDRobot {
     public DcMotorEx armExtension, armRotation;
     public Servo wristRotation;
     GoBildaPinpointDriver odo;
+    //FakeOdo odo = new FakeOdo();
     private Pose2D targetStartPose;
     private Pose2D targetEndPose;
     private Pose2D currentPose;
@@ -264,10 +265,8 @@ public class IDRobot {
 
         armRotation.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(new BNO055IMU.Parameters());
 
-
+        //odo.init(this);  //if FakeOdo
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);

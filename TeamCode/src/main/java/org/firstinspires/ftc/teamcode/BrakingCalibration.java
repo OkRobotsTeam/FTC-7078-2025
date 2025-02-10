@@ -64,7 +64,7 @@ import java.util.ArrayList;
 public class BrakingCalibration extends LinearOpMode {
     public IDRobot robot = new IDRobot();
     private double headingOffset = 0.0;
-    private static final boolean FIELD_ORIENTED = true;
+    private static final boolean FIELD_ORIENTED = false;
 
     private ArrayList<Pair<Double,Double>> brakingData = new ArrayList<Pair<Double, Double>>();
     @Override
@@ -73,37 +73,31 @@ public class BrakingCalibration extends LinearOpMode {
         waitForStart();
         headingOffset = robot.odo.getHeading();
         while (opModeIsActive()) {
-            if (gamepad2.right_bumper) {
-                robot.runIntakeIn();
-                telemetry.addData("Intake", "Running Intake In");
-            } else if (gamepad2.left_bumper) {
-                robot.runIntakeOut();
-            } else {
-                robot.stopIntake();
-            }
-            if (gamepad2.dpad_up) {
-                robot.setWristPosition(1.0);
-                telemetry.addData("Wrist", "Setting Wrist Position to 1.0");
-            }
-            if (gamepad2.dpad_down) {
-                robot.setWristPosition(0.0);
-            }
-            if (gamepad2.back) {
-                if (robot.armState == IDRobot.ArmState.DOCKED) {
-                    robot.startUndocking();
-                }
-            }
-            if (gamepad2.start) {
-                robot.armState = IDRobot.ArmState.DRIVING;
-            }
-            if (gamepad1.dpad_up  && !gamepad1.left_bumper) {
+            if (gamepad1.dpad_up) {
                 robot.setPowers(1,1,1,1);
                 while(gamepad1.dpad_up && opModeIsActive()) {
                     sleep(20);
                 }
-                robot.setPowers(0,0,0,0);
-                robot.setBraking();
-                gatherBrakingData("double[][] forwardBraking = { ");
+                robot.setPowers(0, 0, 0, 0);
+                if (gamepad1.a) {
+                    robot.setCoasting();
+                    gatherBrakingData("double[][] forwardCoasting = { ");
+                } else if (gamepad1.b) {
+                    robot.setPowers(-0.1, -0.1, -0.1, -0.1);
+                    robot.setBraking();
+                    gatherBrakingData("double[][] forwardReversing = { ");
+                } else {
+                    robot.setPowers(0, 0, 0, 0);
+                    robot.setBraking();
+                    gatherBrakingData("double[][] forwardBraking = { ");
+                }
+                sleep(500);
+            }
+            if (gamepad1.dpad_down) {
+                robot.setPowers(-1,-1,-1,-1);
+                while(gamepad1.dpad_down) {
+                    sleep(20);
+                }
             }
             if (gamepad1.dpad_up  && gamepad1.left_bumper) {
                 robot.setPowers(1,1,1,1);
@@ -176,7 +170,6 @@ public class BrakingCalibration extends LinearOpMode {
                 double angle = Math.atan2(y, x);
 
                 angle = angle - robot.odo.getPosition().getHeading(AngleUnit.RADIANS) - headingOffset;
-                telemetry.addData("Heading", robot.odo.getPosition().getHeading(AngleUnit.RADIANS));
 
 
                 x_transformed = Math.cos(angle) * magnitude;
@@ -198,16 +191,17 @@ public class BrakingCalibration extends LinearOpMode {
             robot.rightFront.setPower(y_transformed - x_transformed * 1.1 - rx);
             robot.rightBack.setPower(y_transformed + x_transformed * 1.1 - rx);
 
-//            double wristTrim = gamepad2.dpad_left ? 0.01: 0 + gamepad2.dpad_left ? -0.01: 0;
+            telemetry.addData("Heading", robot.odo.getPosition().getHeading(AngleUnit.RADIANS));
 
-            //robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
-            telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());
-            telemetry.addData("Extension", robot.armExtension.getCurrentPosition());
-            telemetry.addData("Setting Wrist Position", robot.currentWristPosition);
-            telemetry.addData("State", robot.armState.name());
+            //telemetry.addData("Heading", robot.odo.getHeading());
             telemetry.addData("X", robot.odo.getPosX());
             telemetry.addData("Y", robot.odo.getPosY());
-            telemetry.addData("rx", rx);
+            telemetry.addData("velocity", robot.getVelocity());
+
+            telemetry.addData("lf", robot.leftFront.getPower());
+            telemetry.addData("rf", robot.rightFront.getPower());
+            telemetry.addData("lb", robot.leftBack.getPower());
+            telemetry.addData("rb", robot.rightBack.getPower());
             telemetry.update();
             sleep(20);
             robot.odo.update();
