@@ -33,7 +33,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 
 @TeleOp(name="Robot: TeleOp2", group="Robot")
@@ -135,8 +136,10 @@ public class IdTeleop2 extends LinearOpMode {
             telemetry.addData("Extension", robot.armExtension.getCurrentPosition());
             telemetry.addData("Setting Wrist Position", robot.currentWristPosition);
             telemetry.addData("State", robot.armState.name());
-            telemetry.addData("X", robot.odo.getPosX());
-            telemetry.addData("Y", robot.odo.getPosY());
+            Pose2D currentPosition = robot.odo.getPosition();
+            telemetry.addData("X", currentPosition.getX(DistanceUnit.CM));
+            telemetry.addData("Y", currentPosition.getY(DistanceUnit.CM));
+            telemetry.addData("H", currentPosition.getHeading(AngleUnit.DEGREES));
             telemetry.addData("rx", rx);
             telemetry.update();
             sleep(20);

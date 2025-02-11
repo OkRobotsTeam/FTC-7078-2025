@@ -142,18 +142,27 @@ public class IDRobot {
             {1.4072757959365845 , 3.50361383664972},
             {1.1409660577774048 , 1.4664142940450233},
             {0.8291528820991516 , 0.0}};
+//    double[][] turnBraking = {
+//            {4.863333225250244 , 18.357881922836782},
+//            {3.814893960952759 , 12.072304716484155},
+//            {2.8949763774871826 , 7.225001424796119},
+//            {1.8881874084472656 , 3.6205193544836334},
+//            {1.1868184804916382 , 1.325849000926155},
+//            {0.6549578309059143 , 0.0}};
+    //increased by 10%
     double[][] turnBraking = {
-            {4.863333225250244 , 18.357881922836782},
-            {3.814893960952759 , 12.072304716484155},
-            {2.8949763774871826 , 7.225001424796119},
-            {1.8881874084472656 , 3.6205193544836334},
-            {1.1868184804916382 , 1.325849000926155},
+            {4.863333225250244 , 20.19367012},
+            {3.814893960952759 , 13.27953519},
+            {2.8949763774871826 , 7.947501567},
+            {1.8881874084472656 , 3.98257129},
+            {1.1868184804916382 , 1.458433901},
             {0.6549578309059143 , 0.0}};
+
 
     double currentWristPosition;
 
     public boolean disableLimits;
-
+    public long nextWake = System.currentTimeMillis();
     public DcMotor leftFront, rightFront, leftBack, rightBack;
     public CRServo leftIntake, rightIntake;
     public DcMotorEx armExtension, armRotation;
@@ -275,6 +284,7 @@ public class IDRobot {
         odo.resetPosAndIMU();
         opMode.sleep(250);
         odo.update();
+        zeroPose();
         targetStartPose = odo.getPosition();
         targetEndPose = odo.getPosition();
         currentPose = odo.getPosition();
@@ -652,11 +662,14 @@ public class IDRobot {
             telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
             displayTargetEndPose();
             telemetry.update();
+            tickSleep();
         }
     }
     public void startMove(double distance, double speed, boolean correct) {
+        Debug.println("Starting Move:   Distance: ", distance, " Speed: ", speed, " Correct: ", correct);
         moveState = MoveState.MOVING;
         targetStartPose = targetEndPose;
+        odo.update();
         currentPose = odo.getPosition();
         startPosition = odo.getPosition();
         desiredHeading = targetStartPose.getHeading(AngleUnit.DEGREES);
@@ -666,25 +679,24 @@ public class IDRobot {
         moveDistance = Math.abs(distance);
         double xDifference = targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM);
         double yDifference = targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM);
-        movePower = 0.3;
         if (correct) {
             moveDistance = Math.hypot(xDifference, yDifference);
             desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference));
-            System.out.println("Target X: " + targetX + " Target Y: " + targetY);
-            System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
+            Debug.println("Current X: ", currentPose.getX(DistanceUnit.CM),  " Current Y: ", currentPose.getY(DistanceUnit.CM), " Current H:" , currentPose.getHeading(AngleUnit.DEGREES));
+            Debug.println("Target X: ", targetX, " Target Y: ", targetY);
+
             if (distance < 0) {
                 desiredHeading = AngleUnit.normalizeDegrees(desiredHeading + 180);
-                moveSpeed = -speed;
-            } else {
-                moveSpeed = speed;
-            }
-        } else {
-            if (distance < 0) {
-                moveSpeed = -speed;
-            } else {
-                moveSpeed = speed;
             }
         }
+        if (distance < 0) {
+            moveSpeed = -speed;
+            movePower = -0.3;
+        } else {
+            moveSpeed = speed;
+            movePower = 0.3;
+        }
+
 
         System.out.println("Move Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);
 
@@ -701,8 +713,14 @@ public class IDRobot {
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
         double velocity = getVelocity();
-        double timeAdjustedDistanceLeft = distanceLeft - velocity * 0.03;
-        movePower = Math.min(moveSpeed, movePower + 0.1);
+        double timeAdjustedDistanceLeft = distanceLeft - velocity * 0.06;
+        double stoppingDistance = getStoppingDistance(velocity, forwardCoasting, forwardBraking);
+        double brakingDistance = getBrakingDistance(velocity,forwardBraking);
+        if (moveSpeed > 0) {
+            movePower = Math.min(moveSpeed, movePower + 0.05);
+        } else {
+            movePower = Math.max(moveSpeed, movePower - 0.05);
+        }
         if (!opMode.opModeIsActive()) {
             moveState = MoveState.STOPPED;
             return;
@@ -710,30 +728,30 @@ public class IDRobot {
         if (moveState == MoveState.MOVING) {
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
             angularError = AngleUnit.normalizeDegrees(angularError);
-            double adjust = angularError / 40;
+            double adjust = angularError / 60;
             setPowers(movePower + adjust, movePower - adjust, movePower - adjust, movePower + adjust);
-            //System.out.println("Angle Error: " + angularError + " Adjust: " + adjust);
-            System.out.println("MOVE - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + " Angle Error: " + angularError + " Adjust: " + adjust);
-            //System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, forwardBraking));
+            Debug.println("MOVE ", movePower, " Distance Moved: ", distanceMoved, " Distance Left: ", distanceLeft, " Angle Error: ", angularError, " Adjust: ", adjust);
 
-            if (timeAdjustedDistanceLeft < getStoppingDistance(velocity, forwardCoasting, forwardBraking)) {
+            if ( stoppingDistance > timeAdjustedDistanceLeft ) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            if ((timeAdjustedDistanceLeft < getBrakingDistance(velocity, forwardBraking)) || (distanceLeft < 0)) {
-                System.out.println("MOVE BRAKING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " BrakingDistance: " + getBrakingDistance(velocity,forwardBraking) );
+
+            if ((brakingDistance > timeAdjustedDistanceLeft) || (distanceLeft < 0)) {
+                Debug.println("MOVE BRAKING - Distance Moved: ", distanceMoved, " Distance Left: ", distanceLeft, " Velocity: ", getVelocity(), " Braking Distance: ", brakingDistance );
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("MOVE COASTING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " BrakingDistance: " + getBrakingDistance(velocity,forwardBraking) );
+                Debug.println("MOVE COASTING - Distance Moved: ", distanceMoved, " Distance Left: ", distanceLeft, " Velocity: ", getVelocity(), " Braking Distance: ", brakingDistance );
                 setCoasting();
                 setPower(0);
             }
             if (getVelocity() < 10) {
                 setBraking();
                 setPower(0);
-                System.out.println("SETTING TO STOPPED");
-                System.out.println("X Error: " + (targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM)) + " Y Error: " + (targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM)));
+                Debug.println("SETTING TO STOPPED");
+                logTargetEndPoseError();
+                Debug.println("END OF MOVE");
                 moveState = MoveState.STOPPED;
             }
         }
@@ -758,11 +776,13 @@ public class IDRobot {
             telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
             displayTargetEndPose();
             telemetry.update();
+            tickSleep();
         }
     }
     public void startTurn(double degrees, double speed) {
         moveState = MoveState.MOVING;
         targetStartPose = targetEndPose;
+        odo.update();
         currentPose = odo.getPosition();
         startPosition = odo.getPosition();
         startRotation = startPosition.getHeading(AngleUnit.DEGREES);
@@ -771,14 +791,16 @@ public class IDRobot {
         double turnDegrees = degreeDifference(desiredHeading, startRotation);
         turnDistance = Math.abs(turnDegrees);
         moveSpeed = speed;
-        System.out.println("Desired Heading: " + desiredHeading + " Target Start Degrees: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " Current Degrees: " + startRotation);
         if (turnDegrees > 0) {
-            System.out.println("Turning Left " + turnDegrees);
+            Debug.println("Turning Left ", turnDegrees);
             setPowers(-moveSpeed, moveSpeed, moveSpeed, -moveSpeed);
         } else {
-            System.out.println("Turning Right " + turnDegrees);
+            Debug.println("Turning Right ", turnDegrees);
             setPowers(moveSpeed, -moveSpeed, -moveSpeed, moveSpeed);
         }
+        Debug.println("Current X: ", currentPose.getX(DistanceUnit.CM),  " Current Y: ", currentPose.getY(DistanceUnit.CM), " Current H:" , currentPose.getHeading(AngleUnit.DEGREES));
+        Debug.println("Target X: ", targetEndPose.getX(DistanceUnit.CM), " Target Y: ", targetEndPose.getX(DistanceUnit.CM), " Target H:" , targetEndPose.getHeading(AngleUnit.DEGREES));
+        Debug.println("Desired Heading: ", desiredHeading, " Target Start Degrees: ", targetStartPose.getHeading(AngleUnit.DEGREES), " Current Degrees: ", startRotation);
         startBraking = 25;
         if (turnDistance < 50) {
             startBraking = turnDistance * 0.66;
@@ -795,27 +817,29 @@ public class IDRobot {
         telemetry.addData("Distance Turned", distanceTurned);
         double velocity = odo.getHeadingVelocity();
         double speed = Math.abs(velocity);
-        double timeAdjustedDegreesLeft = degreesLeft - speed * 0.03;
+        double timeAdjustedDegreesLeft = degreesLeft - speed * 0.6;
         telemetry.addData("Degrees Left", degreesLeft);
         double stoppingDistance = getStoppingDistance(speed, turnCoasting, turnBraking);
-        System.out.println("Distance Turned: " + distanceTurned + " taDegrees Left: " + timeAdjustedDegreesLeft + "Velocity: " + velocity + " Stopping Distance: " + stoppingDistance);
+        double brakingDistance = getBrakingDistance(speed, turnBraking);
         if (!opMode.opModeIsActive()) {
             moveState = MoveState.STOPPED;
             return;
         }
         if (moveState == MoveState.MOVING) {
+            //System.out.println("TURNING: Distance Turned: " + distanceTurned + " Degrees Left: (" + degreesLeft + "|" + timeAdjustedDegreesLeft + "Velocity: " + velocity + " Stopping Distance: " + stoppingDistance);
+            Debug.println("TURNING: Distance Turned: ", distanceTurned, " Degrees Left: (", degreesLeft, "|", timeAdjustedDegreesLeft, ") Velocity: ", velocity, " Stopping Distance: ", stoppingDistance);
             if (timeAdjustedDegreesLeft < stoppingDistance) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double ratio = velocity / degreesLeft;
-            System.out.println("Turn Braking: " + getBrakingDistance(speed, turnBraking));
-            if ((ratio > 8) || (degreesLeft < 0)) {
-                System.out.println("TBRAKING: Velocity: " + velocity + " Degrees Left : " + " Stopping Distance: " + stoppingDistance );
+
+            //System.out.println("Turn Braking: " + getBrakingDistance(speed, turnBraking));
+            if (brakingDistance > timeAdjustedDegreesLeft || (degreesLeft < 0)) {
+                Debug.println("TBRAKING: Velocity: ", velocity, " Degrees Left: (", degreesLeft, "|", timeAdjustedDegreesLeft, ") Stopping Distance: ", stoppingDistance );
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("TCOASTING: Velocity: " + velocity + " Degrees Left : " + " Stopping Distance: " + stoppingDistance);
+                Debug.println("TCOASTING: Velocity: ", velocity, " Degrees Left: (", degreesLeft, "|", timeAdjustedDegreesLeft, ") Stopping Distance: ", stoppingDistance);
                 setCoasting();
                 setPower(0);
             }
@@ -824,6 +848,8 @@ public class IDRobot {
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
                 moveState = MoveState.STOPPED;
+                logTargetEndPoseError();
+
             }
 
         } else if (moveState == MoveState.STOPPED) {
@@ -841,11 +867,14 @@ public class IDRobot {
             telemetry.addData("Path", "Leg 1: %4.1f S Elapsed", runtime.seconds());
             displayTargetEndPose();
             telemetry.update();
+            tickSleep();
         }
     }
     public void startStrafe(double distance, double speed, boolean correct) {
+        Debug.println("Starting Strafe:   Distance: ", distance, " Speed: ", speed, " Correct: ", correct);
         moveState = MoveState.MOVING;
         targetStartPose = targetEndPose;
+        odo.update();
         currentPose = odo.getPosition();
         startPosition = odo.getPosition();
         double startHeading = targetStartPose.getHeading(AngleUnit.DEGREES);
@@ -859,25 +888,23 @@ public class IDRobot {
         if (correct) {
             moveDistance = Math.hypot(xDifference, yDifference);
             desiredHeading = Math.toDegrees(Math.atan2(yDifference, xDifference)) - 90;
-            System.out.println("Target X: " + targetX + " Target Y: " + targetY);
-            System.out.println("Current X: " + currentPose.getX(DistanceUnit.CM) + " Current Y: " + currentPose.getY(DistanceUnit.CM));
             if (distance < 0) {
                 desiredHeading = AngleUnit.normalizeDegrees(desiredHeading + 180);
-                moveSpeed = -speed;
-            } else {
-                moveSpeed = speed;
-            }
-        }  else {
-            if (distance < 0) {
-                moveSpeed = -speed;
-            } else {
-                moveSpeed = speed;
             }
         }
-        System.out.println("Target X: " + targetX + " Target Y: " + targetY + "Start X: " + targetStartPose.getX(DistanceUnit.CM) + " Start Y: " + targetStartPose.getY(DistanceUnit.CM));
-        System.out.println("Strafe Distance: " + distance + " | " + moveDistance + " Heading: " + targetStartPose.getHeading(AngleUnit.DEGREES) + " | " + desiredHeading);moveState = MoveState.MOVING;
+        if (distance < 0) {
+            moveSpeed = -speed;
+            movePower = -0.3;
+        } else {
+            moveSpeed = speed;
+            movePower = 0.3;
+        }
+        Debug.println("Target X: ", targetX, " Target Y: ", targetY, " Intended Start X: ", targetStartPose.getX(DistanceUnit.CM), " Intended Start Y: ", targetStartPose.getY(DistanceUnit.CM));
+        Debug.println("Strafe Distance: ", distance, " | ", moveDistance, " Heading: ", targetStartPose.getHeading(AngleUnit.DEGREES), " | ", desiredHeading);
+        moveState = MoveState.MOVING;
         startBraking = 8;
         if (moveDistance < 35) {
+            startBraking = moveDistance * 0.33;
             startBraking = moveDistance * 0.33;
         }
     }
@@ -888,6 +915,8 @@ public class IDRobot {
         double velocity = getVelocity();
         double distanceLeft = (moveDistance - distanceMoved);
         double timeAdjustedDistanceLeft = distanceLeft - velocity * 0.03;
+        double stoppingDistance = getStoppingDistance(velocity, strafeCoasting, strafeBraking);
+        double brakingDistance = getBrakingDistance(velocity,strafeBraking);
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
         if (!opMode.opModeIsActive()) {
@@ -896,31 +925,36 @@ public class IDRobot {
         }
 
         if (moveState == MoveState.MOVING) {
+            if (moveSpeed > 0) {
+                movePower = Math.min(moveSpeed, movePower + 0.05);
+            } else {
+                movePower = Math.max(moveSpeed, movePower - 0.05);
+            }
             double angularError = odo.getPosition().getHeading(AngleUnit.DEGREES) - desiredHeading;
             angularError = AngleUnit.normalizeDegrees(angularError);
             double adjust = angularError / 40;
-            setPowers(-moveSpeed + adjust, moveSpeed - adjust, -moveSpeed - adjust, moveSpeed + adjust);
-            System.out.println("Strafe - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + "Angle Error: " + angularError + " Adjust: " + adjust);
-            if (timeAdjustedDistanceLeft < getBrakingDistance(velocity, strafeBraking)) {
+            setPowers(-movePower + adjust, movePower - adjust, -movePower - adjust, movePower + adjust);
+            Debug.println("STRAFE ", movePower, " Distance Moved: ", distanceMoved, " Distance Left : (", distanceLeft, "|", timeAdjustedDistanceLeft, ") Angle Error: ", angularError, " Adjust: ", adjust);
+            if (timeAdjustedDistanceLeft < stoppingDistance) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
             double ratio = velocity / distanceLeft;
            // System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, strafeBraking));
-            if ((ratio > 9.5) || (distanceLeft < 0)) {
-                System.out.println("Strafe - BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " BrakingDistance: " + getBrakingDistance(velocity,strafeBraking));
+            if ((brakingDistance > timeAdjustedDistanceLeft) || (distanceLeft < 0)) {
+                Debug.println("Strafe - BRAKING: Velocity: ", getVelocity(), " Distance Left : (", distanceLeft, "|", timeAdjustedDistanceLeft, ") Braking Distance: ", brakingDistance);
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("Strafe - COASTING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " BrakingDistance: " + getBrakingDistance(velocity,strafeBraking));
+                Debug.println("Strafe - COASTING: Velocity: ", getVelocity(), " Distance Left : (", distanceLeft, "|", timeAdjustedDistanceLeft, ") Braking Distance: ", brakingDistance);
                 setCoasting();
                 setPower(0);
             }
-            if (getVelocity() < 1) {
+            if (getVelocity() < 15) {
                 setBraking();
                 setPower(0);
-                System.out.println("SETTING TO STOPPED");
-                System.out.println("X Error: " + (targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM)) + " Y Error: " + (targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM)));
+                Debug.println("SETTING TO STOPPED");
+                logTargetEndPoseError();
                 moveState = MoveState.STOPPED;
             }
         }
@@ -956,5 +990,22 @@ public class IDRobot {
 
     private MoveState figureOutStateStuff(double velocity, double distance, double totalDistance, double[][] coastData, double[][] brakeData) {
         return(MoveState.BRAKING);
+    }
+    private void logTargetEndPoseError() {
+        currentPose = odo.getPosition();
+        Debug.println("Current X: ", currentPose.getX(DistanceUnit.CM), " Current Y: ", currentPose.getY(DistanceUnit.CM), " Current H:", currentPose.getHeading(AngleUnit.DEGREES));
+        Debug.println("Target X: ", targetEndPose.getX(DistanceUnit.CM), " Target Y: ", targetEndPose.getY(DistanceUnit.CM), " Target H:", targetEndPose.getHeading(AngleUnit.DEGREES));
+        Debug.println("X Error: ", (targetEndPose.getX(DistanceUnit.CM) - currentPose.getX(DistanceUnit.CM)), " Y Error: ", (targetEndPose.getY(DistanceUnit.CM) - currentPose.getY(DistanceUnit.CM)), " H Error: ", AngleUnit.normalizeDegrees(targetEndPose.getHeading(AngleUnit.DEGREES) - currentPose.getHeading(AngleUnit.DEGREES)) );
+    }
+
+    public void tickSleep() {
+        long now = System.currentTimeMillis();
+        nextWake = nextWake + 20;
+        if (nextWake < now) {
+            nextWake = now + 20;
+            return;
+        }
+        long sleepTime = (nextWake - now);
+        opMode.sleep(sleepTime);
     }
 }

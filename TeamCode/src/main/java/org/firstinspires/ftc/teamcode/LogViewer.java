@@ -107,20 +107,32 @@ public class LogViewer implements WebHandler {
                     int nl = opModeStarts.get(i+1);
                     html.add("Found: <a href=\"?start=" + l + "&end=" + nl + "\">" + l + "</a>:" + lines.get(l)+"\n");
                 }
-                if (opModeStarts.size() > 0) {
+                if (!opModeStarts.isEmpty()) {
                     int l = opModeStarts.get(opModeStarts.size()-1);
                     html.add("Found: <a href=\"?start=" + l + "\">" + l + "</a>:" + lines.get(l)+"\n");
                 }
             }
-            if (parms.get("start") != null) {
-
+            if ((parms.get("start") != null) && !parms.get("start").isEmpty())  {
                 startLine = Integer.parseInt(parms.get("start"));
                 html.add("Overriding seek to start at line :"+startLine+"\n");
+            } else {
+                if (!opModeStarts.isEmpty()) {
+                    startLine = opModeStarts.get(opModeStarts.size() - 1);
+                }
             }
-            if (parms.get("end") != null) {
+            if ((parms.get("end") != null) && !parms.get("end").isEmpty()) {
                 endLine = Integer.parseInt(parms.get("end"));
                 html.add("Ending at line :"+endLine+"\n");
             }
+            if ((startLine >= lines.size()) || (endLine >= lines.size())) {
+                if (!opModeStarts.isEmpty()) {
+                    startLine = opModeStarts.get(opModeStarts.size() - 1);
+                } else {
+                    startLine = 0;
+                }
+                endLine = 0;
+            }
+
             if (endLine == 0) {
                 endLine = lines.size()-1;
             }

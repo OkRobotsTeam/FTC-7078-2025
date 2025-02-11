@@ -52,13 +52,14 @@ public class IdTestAuto extends LinearOpMode {
 
         robot.zeroPose();
 
-        robot.move(60, 1, true);
-        robot.strafe(-60, 1, true);
-        robot.strafe(60, 1, true);
-        robot.turn(180, 1);
-        robot.move(30, 1, true);
-        robot.turn(180, 1);
-        robot.move(-30, 1, true);
+        double speed = 1;
+        robot.move(60, speed, true);
+        robot.strafe(-60, speed, true);
+        robot.strafe(60, speed, true);
+        robot.turn(180, speed);
+        robot.move(30, speed, true);
+        robot.turn(180, speed);
+        robot.move(-30, speed, true);
 
         double loopEndPosition = (robot.odo.getPosition().getHeading(AngleUnit.DEGREES));
 
