@@ -29,31 +29,12 @@
 
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
-/*
- * This OpMode illustrates the concept of driving a path based on time.
- * The code is structured as a LinearOpMode
- *
- * The code assumes that you do NOT have encoders on the wheels,
- *   otherwise you would use: RobotAutoDriveByEncoder;
- *
- *   The desired path in this example is:
- *   - Drive forward for 3 seconds
- *   - Spin right for 1.3 seconds
- *   - Drive Backward for 1 Second
- *
- *  The code is written in a simple form with no optimizations.
- *  However, there are several ways that this type of sequence could be streamlined,
- *
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
- */
 
 @TeleOp(name="Robot: TeleOp2", group="Robot")
 
@@ -128,7 +109,6 @@ public class IdTeleop2 extends LinearOpMode {
                 angle = angle - robot.odo.getPosition().getHeading(AngleUnit.RADIANS);
                 telemetry.addData("Heading", robot.odo.getPosition().getHeading(AngleUnit.RADIANS));
 
-
                 x_transformed = Math.cos(angle) * magnitude;
                 y_transformed = Math.sin(angle) * magnitude;
             }
@@ -149,7 +129,6 @@ public class IdTeleop2 extends LinearOpMode {
             robot.rightFront.setPower(y_transformed - x_transformed * 1.1 - rx);
             robot.rightBack.setPower(y_transformed + x_transformed * 1.1 - rx);
 
-//            double wristTrim = gamepad2.dpad_left ? 0.01: 0 + gamepad2.dpad_left ? -0.01: 0;
 
             robot.doArmControl(-gamepad2.left_stick_y, -gamepad2.right_stick_y, gamepad2.dpad_left, gamepad2.dpad_right);
             telemetry.addData("Rotation", robot.armRotation.getCurrentPosition());

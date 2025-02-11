@@ -720,14 +720,12 @@ public class IDRobot {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double ratio = velocity / distanceLeft;
-            //System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, forwardBraking));
             if ((timeAdjustedDistanceLeft < getBrakingDistance(velocity, forwardBraking)) || (distanceLeft < 0)) {
-                System.out.println("MOVE BRAKING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " Ratio: " + ratio );
+                System.out.println("MOVE BRAKING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " BrakingDistance: " + getBrakingDistance(velocity,forwardBraking) );
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("MOVE COASTING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " Ratio: " + ratio );
+                System.out.println("MOVE COASTING - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft  + " Velocity: " + getVelocity()  + " BrakingDistance: " + getBrakingDistance(velocity,forwardBraking) );
                 setCoasting();
                 setPower(0);
             }
@@ -795,30 +793,33 @@ public class IDRobot {
         double distanceTurned = degreeDifference(startRotation, rotation);
         double degreesLeft = turnDistance - Math.abs(distanceTurned);
         telemetry.addData("Distance Turned", distanceTurned);
+        double velocity = odo.getHeadingVelocity();
+        double speed = Math.abs(velocity);
+        double timeAdjustedDegreesLeft = degreesLeft - speed * 0.03;
         telemetry.addData("Degrees Left", degreesLeft);
-        System.out.println("Distance Turned: " + distanceTurned + " Degrees Left: " + degreesLeft + " DX" + odo.getPosition().getX(DistanceUnit.CM));
+        double stoppingDistance = getStoppingDistance(speed, turnCoasting, turnBraking);
+        System.out.println("Distance Turned: " + distanceTurned + " taDegrees Left: " + timeAdjustedDegreesLeft + "Velocity: " + velocity + " Stopping Distance: " + stoppingDistance);
         if (!opMode.opModeIsActive()) {
             moveState = MoveState.STOPPED;
             return;
         }
         if (moveState == MoveState.MOVING) {
-            if (degreesLeft < startBraking) {
+            if (timeAdjustedDegreesLeft < stoppingDistance) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double velocity = odo.getHeadingVelocity();
             double ratio = velocity / degreesLeft;
-            System.out.println("Turn Braking: " + getBrakingDistance(velocity, turnBraking));
+            System.out.println("Turn Braking: " + getBrakingDistance(speed, turnBraking));
             if ((ratio > 8) || (degreesLeft < 0)) {
-                System.out.println("TBRAKING: Velocity: " + velocity + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
+                System.out.println("TBRAKING: Velocity: " + velocity + " Degrees Left : " + " Stopping Distance: " + stoppingDistance );
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("TCOASTING: Velocity: " + velocity + " Degrees Left : " + degreesLeft + " Ratio: " + ratio);
+                System.out.println("TCOASTING: Velocity: " + velocity + " Degrees Left : " + " Stopping Distance: " + stoppingDistance);
                 setCoasting();
                 setPower(0);
             }
-            if (getVelocity() < 1) {
+            if (speed < 1) {
                 setBraking();
                 setPower(0);
                 System.out.println("SETTING TO STOPPED");
@@ -884,7 +885,9 @@ public class IDRobot {
     public void strafeLoop() {
         odo.update();
         double distanceMoved = getDistance(startPosition, odo.getPosition());
+        double velocity = getVelocity();
         double distanceLeft = (moveDistance - distanceMoved);
+        double timeAdjustedDistanceLeft = distanceLeft - velocity * 0.03;
         telemetry.addData("Distance Moved", distanceMoved);
         telemetry.addData("Distance Left", distanceLeft);
         if (!opMode.opModeIsActive()) {
@@ -898,19 +901,18 @@ public class IDRobot {
             double adjust = angularError / 40;
             setPowers(-moveSpeed + adjust, moveSpeed - adjust, -moveSpeed - adjust, moveSpeed + adjust);
             System.out.println("Strafe - Distance Moved: " + distanceMoved + " Distance Left: " + distanceLeft + "Angle Error: " + angularError + " Adjust: " + adjust);
-            if (distanceLeft < startBraking) {
+            if (timeAdjustedDistanceLeft < getBrakingDistance(velocity, strafeBraking)) {
                 moveState = MoveState.BRAKING;
             }
         } else if (moveState == MoveState.BRAKING) {
-            double velocity = getVelocity();
             double ratio = velocity / distanceLeft;
            // System.out.println("Current Braking Distance: " + getBrakingDistance(velocity, strafeBraking));
             if ((ratio > 9.5) || (distanceLeft < 0)) {
-                System.out.println("Strafe - BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
+                System.out.println("Strafe - BRAKING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " BrakingDistance: " + getBrakingDistance(velocity,strafeBraking));
                 setBraking();
                 setPower(0);
             } else {
-                System.out.println("Strafe - COASTING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " Ratio: " + ratio);
+                System.out.println("Strafe - COASTING: Velocity: " + getVelocity() + " Distance Left : " + distanceLeft + " BrakingDistance: " + getBrakingDistance(velocity,strafeBraking));
                 setCoasting();
                 setPower(0);
             }
